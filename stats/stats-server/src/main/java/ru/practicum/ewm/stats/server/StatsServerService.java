@@ -7,8 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.stats.dto.HitCreateDto;
 import ru.practicum.ewm.stats.dto.StatsResponseDto;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -19,12 +19,23 @@ public class StatsServerService {
     private final StatsServerRepository statsRepository;
 
     @Transactional
-    public void createHit(HitCreateDto HitData) {
-        Hit hit = HitMapper.mapHitCreateDtoToHit(HitData);
+    public void createHit(HitCreateDto hitData) {
+        log.info("StatsServerService: создание hit {}", hitData);
+        Hit hit = StatsMapper.mapHitCreateDtoToHit(hitData);
         statsRepository.save(hit);
+        log.info("StatsServerService: hit успешно создан {}", hitData);
     }
 
-    public Collection<StatsResponseDto> getStats() {
-        return List.of();
+    public Collection<StatsResponseDto> getStats(
+            LocalDateTime start,
+            LocalDateTime end,
+            Collection<String> uris,
+            Boolean unique
+    ) {
+        log.info("StatsServerService: получение статистики");
+        Collection<StatsView> stats = statsRepository.getStats(start, end, uris, unique);
+        return stats.stream()
+                .map(StatsMapper::mapStatsViewToStatsResponseDto)
+                .toList();
     }
 }
