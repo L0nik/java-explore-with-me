@@ -34,6 +34,7 @@ public class StatsServerService {
     ) {
         log.info("StatsServerService: получение статистики");
         Collection<StatsView> stats = statsRepository.getStats(start, end, uris, unique);
+        log.info("StatsServerService: статистика получена {}", stats);
         return stats.stream()
                 .map(StatsMapper::mapStatsViewToStatsResponseDto)
                 .toList();

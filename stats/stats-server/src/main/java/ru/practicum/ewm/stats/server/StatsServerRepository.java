@@ -9,7 +9,8 @@ import java.util.Collection;
 
 public interface StatsServerRepository extends JpaRepository<Hit, Long> {
 
-    @Query("SELECT h.app, h.uri, CASE WHEN :unique = true THEN COUNT(DISTINCT h.ip) ELSE COUNT(h.ip) END as hits " +
+    @Query("SELECT h.app as app, h.uri as uri, " +
+            "CASE WHEN :unique = true THEN COUNT(DISTINCT h.ip) ELSE COUNT(h.ip) END as hits " +
             "FROM Hit h " +
             "WHERE h.timestamp BETWEEN :start AND :end " +
             "AND (:uris IS NULL OR h.uri IN :uris) " +
