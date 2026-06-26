@@ -2,7 +2,11 @@ package ru.practicum.ewm.stats.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import ru.practicum.ewm.stats.dto.HitCreateDto;
 import ru.practicum.ewm.stats.dto.StatsResponseDto;
 
 import java.io.IOException;
@@ -17,28 +21,52 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 
+@Service
 @Slf4j
 public class StatsClient {
 
-    private static final String baseUrl = "http://localhost:9090";
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final String baseUrl;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    public static List<StatsResponseDto> getStats(LocalDateTime start, LocalDateTime end)
+    public StatsClient(@Value("${services.stats-service.url}") String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public void postHit(HitCreateDto hitData) throws IOException, InterruptedException {
+        String url = baseUrl + "/hit";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(hitData)))
+                .build();
+        HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        if (response.statusCode() != 201) {
+            log.warn(
+                    "StatsClient: код ответа сервера статистики отличается от 201 (statusCode = {})",
+                    response.statusCode()
+            );
+        }
+    }
+
+    public List<StatsResponseDto> getStats(LocalDateTime start, LocalDateTime end)
             throws IOException, InterruptedException {
         return getStats(start, end, null, null);
     }
 
-    public static List<StatsResponseDto> getStats(LocalDateTime start, LocalDateTime end, Collection<String> uris)
+    public List<StatsResponseDto> getStats(LocalDateTime start, LocalDateTime end, Collection<String> uris)
             throws IOException, InterruptedException {
         return getStats(start, end, uris, null);
     }
 
-    public static List<StatsResponseDto> getStats(LocalDateTime start, LocalDateTime end, Boolean unique)
+    public List<StatsResponseDto> getStats(LocalDateTime start, LocalDateTime end, Boolean unique)
             throws IOException, InterruptedException {
         return getStats(start, end, null, unique);
     }
 
-    public static List<StatsResponseDto> getStats(
+    public List<StatsResponseDto> getStats(
             LocalDateTime start,
             LocalDateTime end,
             Collection<String> uris,
@@ -57,9 +85,6 @@ public class StatsClient {
             urlBuilder.append("&unique=").append(unique);
         }
 
-        HttpClient httpClient = HttpClient.newHttpClient();
-        ObjectMapper objectMapper = new ObjectMapper();
-
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(urlBuilder.toString()))
                 .GET()
@@ -70,7 +95,7 @@ public class StatsClient {
         if (response.statusCode() == 200) {
             return objectMapper.readValue(response.body(), new TypeReference<>() {});
         } else {
-            log.info(
+            log.warn(
                     "StatsClient: код ответа сервера статистики отличается от 200 (statusCode = {})",
                     response.statusCode()
             );

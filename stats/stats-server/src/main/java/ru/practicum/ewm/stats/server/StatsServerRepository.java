@@ -17,7 +17,7 @@ public interface StatsServerRepository extends JpaRepository<Hit, Long> {
             "GROUP BY h.app, h.uri " +
             "ORDER BY hits DESC"
     )
-    public Collection<StatsView> getStats(
+    Collection<StatsView> getStats(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
             @Param("uris") Collection<String> uris,

@@ -1,5 +1,6 @@
 package ru.practicum.ewm.stats.server;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,7 +21,7 @@ public class StatsServerController {
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createHit(@RequestBody HitCreateDto hitData) {
+    public void createHit(@RequestBody @Valid HitCreateDto hitData) {
         log.info("StatsServerController: сохранение информации о запросе (hitData = {})", hitData);
         statsService.createHit(hitData);
     }
