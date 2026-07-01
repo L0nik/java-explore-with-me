@@ -7,7 +7,7 @@ import ru.practicum.ewm.users.dto.UserDtoPost;
 @UtilityClass
 public class UserMapper {
 
-    UserDto mapUserToUserDto(User user) {
+    public UserDto mapUserToUserDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
@@ -15,7 +15,14 @@ public class UserMapper {
         return dto;
     }
 
-    User mapUserDtoPostToUser(UserDtoPost dto) {
+    public UserDto mapUserToUserDtoShort(User user) {
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+        return dto;
+    }
+
+    public User mapUserDtoPostToUser(UserDtoPost dto) {
         User user = new User();
         user.setEmail(dto.getEmail());
         user.setName(dto.getName());
