@@ -33,7 +33,7 @@ public class CategoryService {
     public void deleteCategory(Long categoryId) {
         log.info("CategoryService: удаление категории (categoryId = {})", categoryId);
         Category category = categoryRepository.findById(categoryId).orElseThrow(
-                () -> new NotFoundException(String.format("Категория с id = %d не найдена", categoryId))
+                () -> new NotFoundException(String.format("Category with id = %d not found", categoryId))
         );
         categoryRepository.delete(category);
     }
@@ -46,7 +46,7 @@ public class CategoryService {
                 categoryData
         );
         Category category = categoryRepository.findById(categoryId).orElseThrow(
-                () -> new NotFoundException(String.format("Категория с id = %d не найдена", categoryId))
+                () -> new NotFoundException(String.format("Category with id = %d not found", categoryId))
         );
         category.setName(categoryData.getName());
         categoryRepository.save(category);
@@ -63,7 +63,7 @@ public class CategoryService {
 
     public CategoryDto getCategoryById(Long categoryId) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(
-                () -> new NotFoundException(String.format("Категория с id = %d не найдена", categoryId))
+                () -> new NotFoundException(String.format("Category with id = %d not found", categoryId))
         );
 
         return CategoryMapper.mapCategoryToCategoryDto(category);

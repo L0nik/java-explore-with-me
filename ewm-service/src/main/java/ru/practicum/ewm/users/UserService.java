@@ -49,7 +49,7 @@ public class UserService {
     public void deleteUser(@PathVariable Long userId) {
         log.info("UserService: удаление пользователя (userId = {})", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id=%d не найден", userId)));
+                .orElseThrow(() -> new NotFoundException(String.format("User with id=%d not found", userId)));
         userRepository.delete(user);
     }
 

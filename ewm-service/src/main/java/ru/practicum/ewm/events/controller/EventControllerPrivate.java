@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.events.EventService;
 import ru.practicum.ewm.events.dto.EventDto;
+import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
 
 import java.util.Collection;
@@ -20,9 +21,13 @@ public class EventControllerPrivate {
     private final EventService eventService;
 
     @GetMapping
-    public Collection<EventDto> getEventsOfUser(@PathVariable Long userId) {
+    public Collection<EventDto> getEventsOfUser(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         log.info("EventControllerPrivate: получение событий пользователя (userId = {})", userId);
-        return eventService.getEventsOfUser(userId);
+        return eventService.getEventsOfUser(userId, from, size);
     }
 
     @PostMapping
@@ -43,9 +48,18 @@ public class EventControllerPrivate {
     }
 
     @PatchMapping("/{eventId}")
-    public EventDto patchEventOfUser(@PathVariable Long userId, @PathVariable Long eventId) {
-        log.info("EventControllerPrivate: изменение события пользователем (userId = {}, eventId = {})", userId, eventId);
-        return eventService.patchEventOfUser(userId, eventId);
+    public EventDto patchEventOfUser(
+            @PathVariable Long userId,
+            @PathVariable Long eventId,
+            @RequestBody EventDtoPatch eventData
+    ) {
+        log.info(
+                "EventControllerPrivate: изменение события пользователем (userId = {}, eventId = {}, eventData = {})",
+                userId,
+                eventId,
+                eventData
+        );
+        return eventService.patchEventOfUser(userId, eventId, eventData);
     }
 
     @GetMapping("/{eventId}/requests")
