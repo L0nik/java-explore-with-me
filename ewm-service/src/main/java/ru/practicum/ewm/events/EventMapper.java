@@ -4,7 +4,9 @@ import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
+import ru.practicum.ewm.events.dto.LocationDto;
 import ru.practicum.ewm.exception.ValidationException;
+import ru.practicum.ewm.users.UserMapper;
 
 import java.time.LocalDateTime;
 
@@ -26,6 +28,8 @@ public class EventMapper {
         dto.setState(event.getState());
         dto.setConfirmedRequests(event.getConfirmedRequests());
         dto.setViews(event.getViews());
+        dto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
+        dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
         return dto;
     }
 
@@ -47,7 +51,7 @@ public class EventMapper {
 
     }
 
-    public void updateEvent(Event event, EventDtoPatch dto) {
+    public void updateEvent(Event event, EventDtoPatch dto, boolean byAdmin) {
 
         if (dto.getAnnotation() != null && !dto.getAnnotation().isBlank()) {
             event.setAnnotation(dto.getAnnotation());
@@ -85,10 +89,26 @@ public class EventMapper {
             event.setRequestModeration(dto.getRequestModeration());
         }
 
-        if (dto.getStateAction() != null) {
-            switch (dto.getStateAction()) {
-                case StateAction.SEND_TO_REVIEW -> event.setState(EventState.PENDING);
-                case StateAction.CANCEL_REVIEW -> event.setState(EventState.CANCELED);
+        StateAction stateAction = dto.getStateAction();
+        if (stateAction != null) {
+            if (stateAction.equals(StateAction.SEND_TO_REVIEW)) {
+                event.setState(EventState.PENDING);
+            } else if (stateAction.equals(StateAction.CANCEL_REVIEW)) {
+                event.setState(EventState.CANCELED);
+            } else if (byAdmin && stateAction.equals(StateAction.PUBLISH_EVENT)) {
+                if (!event.getState().equals(EventState.PENDING)) {
+                    throw new ValidationException(
+                            "Cannot publish the event because it's not in the right state: " + event.getState()
+                    );
+                }
+                event.setState(EventState.PUBLISHED);
+            } else if (byAdmin && stateAction.equals(StateAction.REJECT_EVENT)) {
+                if (event.getState().equals(EventState.PUBLISHED)) {
+                    throw new ValidationException(
+                            "Cannot reject the event because it's not in the right state: " + event.getState()
+                    );
+                }
+                event.setState(EventState.CANCELED);
             }
         }
 

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.category.Category;
@@ -19,6 +21,7 @@ import ru.practicum.ewm.users.User;
 import ru.practicum.ewm.users.UserMapper;
 import ru.practicum.ewm.users.UserRepository;
 
+import javax.swing.text.html.HTMLDocument;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
@@ -39,8 +42,6 @@ public class EventService {
                 .map((event) -> {
                     EventDto eventDto = EventMapper.mapEventToEventDto(event);
                     eventDto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
-                    eventDto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
-                    eventDto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
                     return eventDto;
                 })
                 .toList();
@@ -77,8 +78,6 @@ public class EventService {
 
         EventDto eventDto = EventMapper.mapEventToEventDto(event);
         eventDto.setCategory(CategoryMapper.mapCategoryToCategoryDto(category));
-        eventDto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
-        eventDto.setInitiator(UserMapper.mapUserToUserDtoShort(initiator));
         return eventDto;
 
     }
@@ -97,8 +96,6 @@ public class EventService {
 
         EventDto eventDto = EventMapper.mapEventToEventDto(event);
         eventDto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
-        eventDto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
-        eventDto.setInitiator(UserMapper.mapUserToUserDtoShort(user));
         return eventDto;
     }
 
@@ -131,14 +128,86 @@ public class EventService {
             event.setCategory(category);
         }
 
-        EventMapper.updateEvent(event, eventData);
+        EventMapper.updateEvent(event, eventData, false);
+
+        eventRepository.save(event);
+        EventDto eventDto = EventMapper.mapEventToEventDto(event);
+        eventDto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
+        return eventDto;
+    }
+
+    @Transactional
+    public EventDto patchEventByAdmin(Long eventId, EventDtoPatch eventData) {
+
+        log.info(
+                "EventService: изменение события администратором (eventId = {}, eventData = {})",
+                eventId,
+                eventData
+        );
+
+        Event event = eventRepository.findById(eventId).orElseThrow(
+                () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
+        );
+
+        if (eventData.getCategory() != null) {
+            Category category = categoryRepository.findById(eventData.getCategory()).orElseThrow(
+                    () -> new NotFoundException(String.format("Category with id = %d not found", eventData.getCategory()))
+            );
+            event.setCategory(category);
+        }
+
+        EventMapper.updateEvent(event, eventData, true);
 
         eventRepository.save(event);
         EventDto eventDto = EventMapper.mapEventToEventDto(event);
         eventDto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
         eventDto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
-        eventDto.setInitiator(UserMapper.mapUserToUserDtoShort(user));
+        eventDto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
         return eventDto;
+    }
+
+    public Collection<EventDto> findEvents(
+            Collection<Long> users,
+            Collection<EventState> states,
+            Collection<Long> categories,
+            LocalDateTime rangeStart,
+            LocalDateTime rangeEnd,
+            int from,
+            int size
+    ) {
+
+        Pageable pageable = PageRequest.of(from / size, size);
+
+        Specification<Event> spec = Specification.where(null);
+
+        if (users != null) {
+            spec = spec.and(EventSpecification.initiatorIn(users));
+        }
+
+        if (states != null) {
+            spec = spec.and(EventSpecification.stateIn(states));
+        }
+
+        if (categories != null) {
+            spec = spec.and(EventSpecification.categoryIn(categories));
+        }
+
+        if (rangeStart != null) {
+            spec = spec.and(EventSpecification.eventDateAfter(rangeStart));
+        }
+
+        if (rangeEnd != null) {
+            spec = spec.and(EventSpecification.eventDateBefore(rangeEnd));
+        }
+
+        return eventRepository.findAll(spec, pageable)
+                .stream()
+                .map((event) -> {
+                    EventDto eventDto = EventMapper.mapEventToEventDto(event);
+                    eventDto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
+                    return eventDto;
+                })
+                .toList();
     }
 
 }

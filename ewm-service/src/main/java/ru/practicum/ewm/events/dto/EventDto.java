@@ -5,6 +5,7 @@ import lombok.Data;
 import ru.practicum.ewm.category.dto.CategoryDto;
 import ru.practicum.ewm.events.EventState;
 import ru.practicum.ewm.users.dto.UserDto;
+import ru.practicum.ewm.users.dto.UserDtoShort;
 
 import java.time.LocalDateTime;
 
@@ -23,7 +24,7 @@ public class EventDto {
     private int participantLimit;
     private boolean requestModeration;
     private String title;
-    private UserDto initiator;
+    private UserDtoShort initiator;
     private LocalDateTime createdOn;
     private LocalDateTime publishedOn;
     private EventState state;
