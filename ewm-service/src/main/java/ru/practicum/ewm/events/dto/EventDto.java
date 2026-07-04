@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import ru.practicum.ewm.category.dto.CategoryDto;
 import ru.practicum.ewm.events.EventState;
-import ru.practicum.ewm.users.dto.UserDto;
 import ru.practicum.ewm.users.dto.UserDtoShort;
 
 import java.time.LocalDateTime;

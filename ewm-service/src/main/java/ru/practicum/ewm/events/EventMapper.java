@@ -1,6 +1,7 @@
 package ru.practicum.ewm.events;
 
 import lombok.experimental.UtilityClass;
+import ru.practicum.ewm.category.CategoryMapper;
 import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
@@ -9,11 +10,12 @@ import ru.practicum.ewm.exception.ValidationException;
 import ru.practicum.ewm.users.UserMapper;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 @UtilityClass
 public class EventMapper {
 
-    public EventDto mapEventToEventDto(Event event) {
+    public EventDto mapEventToEventDto(Event event, int views) {
         EventDto dto = new EventDto();
         dto.setId(event.getId());
         dto.setAnnotation(event.getAnnotation());
@@ -27,9 +29,10 @@ public class EventMapper {
         dto.setPublishedOn(event.getPublishedOn());
         dto.setState(event.getState());
         dto.setConfirmedRequests(event.getConfirmedRequests());
-        dto.setViews(event.getViews());
         dto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
         dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
+        dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
+        dto.setViews(views);
         return dto;
     }
 

@@ -31,13 +31,13 @@ public class EventControllerAdmin {
             @RequestParam(defaultValue = "10") int size
     ) {
         log.info("EventControllerAdmin: получение списка событий");
-        return eventService.findEvents(users, states, categories, rangeStart, rangeEnd, from, size);
+        return eventService.findEventsAdmin(users, states, categories, rangeStart, rangeEnd, from, size);
     }
 
     @PatchMapping("/{eventId}")
     public EventDto patchEvent(@PathVariable Long eventId, @RequestBody EventDtoPatch eventData) {
         log.info("EventControllerAdmin: изменение данных события (eventId = {}, eventData = {})", eventId, eventData);
-        return eventService.patchEventByAdmin(eventId, eventData);
+        return eventService.patchEventAdmin(eventId, eventData);
     }
 
 }

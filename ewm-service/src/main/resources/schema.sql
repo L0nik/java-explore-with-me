@@ -25,6 +25,5 @@ CREATE TABLE IF NOT EXISTS  events (
         created_on TIMESTAMP NOT NULL,
         published_on TIMESTAMP,
         state VARCHAR(20) NOT NULL,
-        confirmed_requests INT NOT NULL DEFAULT 0,
-        views INT NOT NULL DEFAULT 0
+        confirmed_requests INT NOT NULL DEFAULT 0
 );

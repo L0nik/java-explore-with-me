@@ -27,7 +27,7 @@ public class EventControllerPrivate {
             @RequestParam(defaultValue = "10") int size
     ) {
         log.info("EventControllerPrivate: получение событий пользователя (userId = {})", userId);
-        return eventService.getEventsOfUser(userId, from, size);
+        return eventService.getEventsPrivate(userId, from, size);
     }
 
     @PostMapping
@@ -38,13 +38,13 @@ public class EventControllerPrivate {
                 userId,
                 eventData
         );
-        return eventService.createEventOfUser(userId, eventData);
+        return eventService.createEventPrivate(userId, eventData);
     }
 
     @GetMapping("/{eventId}")
     public EventDto getEventOfUser(@PathVariable Long userId, @PathVariable Long eventId) {
         log.info("EventControllerPrivate: получение события пользователя (userId = {}, eventId = {})", userId, eventId);
-        return eventService.getEventOfUser(userId, eventId);
+        return eventService.getEventByIdPrivate(userId, eventId);
     }
 
     @PatchMapping("/{eventId}")
@@ -59,7 +59,7 @@ public class EventControllerPrivate {
                 eventId,
                 eventData
         );
-        return eventService.patchEventOfUser(userId, eventId, eventData);
+        return eventService.patchEventPrivate(userId, eventId, eventData);
     }
 
     @GetMapping("/{eventId}/requests")

@@ -65,7 +65,4 @@ public class Event {
     @Column(name = "confirmed_requests", nullable = false)
     private int confirmedRequests;
 
-    @Column(nullable = false)
-    private int views;
-
 }
