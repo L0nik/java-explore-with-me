@@ -2,7 +2,6 @@ package ru.practicum.ewm.events;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,15 +14,13 @@ import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.exception.ValidationException;
+import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.stats.client.StatsClient;
 import ru.practicum.ewm.stats.dto.HitCreateDto;
-import ru.practicum.ewm.stats.dto.StatsResponseDto;
 import ru.practicum.ewm.users.User;
 import ru.practicum.ewm.users.UserRepository;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -67,7 +64,7 @@ public class EventService {
                     "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: %s",
                     eventData.getEventDate()
             );
-            throw new ValidationException(message);
+            throw new ConflictException(message);
         }
 
         Event event = EventMapper.mapEventDtoPostToEvent(eventData);
@@ -116,7 +113,7 @@ public class EventService {
         );
 
         if (event.getState() != EventState.PENDING && event.getState() != EventState.CANCELED) {
-            throw new ValidationException("Event must not be published");
+            throw new ConflictException("Event must not be published");
         }
 
         if (eventData.getCategory() != null) {

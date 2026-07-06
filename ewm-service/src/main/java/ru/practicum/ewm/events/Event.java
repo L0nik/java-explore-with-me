@@ -62,7 +62,4 @@ public class Event {
     @Column(nullable = false)
     private EventState state;
 
-    @Column(name = "confirmed_requests", nullable = false)
-    private int confirmedRequests;
-
 }

@@ -24,9 +24,9 @@ public class ErrorHandler {
         );
     }
 
-    @ExceptionHandler(ValidationException.class)
+    @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleValidationException(ValidationException exception) {
+    public ErrorResponse handleValidationException(ConflictException exception) {
         return new ErrorResponse(
                 "FORBIDDEN",
                 "For the requested operation the conditions are not met.",

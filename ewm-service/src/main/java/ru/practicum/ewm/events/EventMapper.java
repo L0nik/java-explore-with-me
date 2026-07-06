@@ -6,11 +6,10 @@ import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
 import ru.practicum.ewm.events.dto.LocationDto;
-import ru.practicum.ewm.exception.ValidationException;
+import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.users.UserMapper;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 
 @UtilityClass
 public class EventMapper {
@@ -28,11 +27,11 @@ public class EventMapper {
         dto.setCreatedOn(event.getCreatedOn());
         dto.setPublishedOn(event.getPublishedOn());
         dto.setState(event.getState());
-        dto.setConfirmedRequests(event.getConfirmedRequests());
         dto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
         dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
         dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
         dto.setViews(views);
+        dto.setConfirmedRequests(0); //todo: сделать настоящее присваивание
         return dto;
     }
 
@@ -70,7 +69,7 @@ public class EventMapper {
                         "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: %s",
                         dto.getEventDate()
                 );
-                throw new ValidationException(message);
+                throw new ConflictException(message);
             } else {
                 event.setEventDate(dto.getEventDate());
             }
@@ -100,14 +99,14 @@ public class EventMapper {
                 event.setState(EventState.CANCELED);
             } else if (byAdmin && stateAction.equals(StateAction.PUBLISH_EVENT)) {
                 if (!event.getState().equals(EventState.PENDING)) {
-                    throw new ValidationException(
+                    throw new ConflictException(
                             "Cannot publish the event because it's not in the right state: " + event.getState()
                     );
                 }
                 event.setState(EventState.PUBLISHED);
             } else if (byAdmin && stateAction.equals(StateAction.REJECT_EVENT)) {
                 if (event.getState().equals(EventState.PUBLISHED)) {
-                    throw new ValidationException(
+                    throw new ConflictException(
                             "Cannot reject the event because it's not in the right state: " + event.getState()
                     );
                 }
