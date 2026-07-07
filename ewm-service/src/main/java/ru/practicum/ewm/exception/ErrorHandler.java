@@ -28,7 +28,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleValidationException(ConflictException exception) {
         return new ErrorResponse(
-                "FORBIDDEN",
+                "CONFLICT",
                 "For the requested operation the conditions are not met.",
                 exception.getMessage(),
                 LocalDateTime.now()
@@ -63,6 +63,17 @@ public class ErrorHandler {
         return new ErrorResponse(
                 "CONFLICT",
                 "Integrity constraint has been violated.",
+                exception.getMessage(),
+                LocalDateTime.now()
+        );
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleBadRequestException(BadRequestException exception) {
+        return new ErrorResponse(
+                "BAD_REQUEST",
+                "Incorrectly made request.",
                 exception.getMessage(),
                 LocalDateTime.now()
         );

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @UtilityClass
 public class EventMapper {
 
-    public EventDto mapEventToEventDto(Event event, int views) {
+    public EventDto mapEventToEventDto(Event event, int views, int confirmedRequests) {
         EventDto dto = new EventDto();
         dto.setId(event.getId());
         dto.setAnnotation(event.getAnnotation());
@@ -31,7 +31,7 @@ public class EventMapper {
         dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
         dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
         dto.setViews(views);
-        dto.setConfirmedRequests(0); //todo: сделать настоящее присваивание
+        dto.setConfirmedRequests(confirmedRequests);
         return dto;
     }
 

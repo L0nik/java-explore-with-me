@@ -8,13 +8,19 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import ru.practicum.ewm.category.Category;
 import ru.practicum.ewm.category.CategoryRepository;
 import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
+import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.exception.ConflictException;
+import ru.practicum.ewm.request.*;
+import ru.practicum.ewm.request.dto.RequestDto;
+import ru.practicum.ewm.request.dto.RequestStatusChangeRequest;
+import ru.practicum.ewm.request.dto.RequestStatusChangeResponse;
 import ru.practicum.ewm.stats.client.StatsClient;
 import ru.practicum.ewm.stats.dto.HitCreateDto;
 import ru.practicum.ewm.users.User;
@@ -33,6 +39,7 @@ public class EventService {
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final RequestRepository requestRepository;
 
     private final StatsClient statsClient;
 
@@ -41,8 +48,15 @@ public class EventService {
         Pageable pageable = PageRequest.of(from / size, size);
         Collection<Event> events = eventRepository.findByInitiatorId(userId, pageable);
         Map<String, Integer> views = getViewsForEvents(events);
+        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
         return events.stream()
-                .map(event -> EventMapper.mapEventToEventDto(event, findViewsForEvent(views, event)))
+                .map(event ->
+                        EventMapper.mapEventToEventDto(
+                                event,
+                                findViewsForEvent(views, event),
+                                confirmedRequestsCounts.getOrDefault(event.getId(), 0)
+                        )
+                )
                 .toList();
     }
 
@@ -75,7 +89,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event));
+        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
 
     }
 
@@ -91,7 +105,7 @@ public class EventService {
                 () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
         );
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event));
+        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
     }
 
     @Transactional
@@ -127,7 +141,113 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event));
+        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+    }
+
+    public Collection<RequestDto> getRequestsForEventPrivate(Long userId, Long eventId) {
+        log.info(
+                """
+                        EventService:
+                        получение запросов на участие в событии текущего пользователя (userId = {}, eventId = {})
+                """,
+                userId,
+                eventId
+        );
+
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException(String.format("User with id = %d not found", userId));
+        }
+
+        if (!eventRepository.existsById(eventId)) {
+            throw new NotFoundException(String.format("Event with id = %d not found", eventId));
+        }
+
+        return requestRepository.findByEventId(eventId).stream()
+                .map(RequestMapper::mapRequestToRequestDto)
+                .toList();
+    }
+
+    @Transactional
+    public RequestStatusChangeResponse changeRequestsStatusesForEvent(
+            Long userId,
+            Long eventId,
+            RequestStatusChangeRequest statusChangeRequest
+    ) {
+        log.info("""
+                    EventService: изменение статуса заявок на участие в событии текущего пользователя
+                    (userId = {}, eventId = {}, statusChangeRequest = {})
+                """,
+                userId,
+                eventId,
+                statusChangeRequest
+        );
+
+        RequestStatusChangeResponse response = new RequestStatusChangeResponse();
+
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException(String.format("User with id = %d not found", userId));
+        }
+
+        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId).orElseThrow(
+                () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
+        );
+
+        Collection<Request> requests = requestRepository.findByEventIdAndIdIn(eventId, statusChangeRequest.getRequestIds());
+
+        if (requests.size() != statusChangeRequest.getRequestIds().size()) {
+            throw new BadRequestException("Some requests do not belong to the specified event.");
+        }
+
+        if (statusChangeRequest.getStatus() == RequestStatus.CONFIRMED) {
+
+            if (event.getParticipantLimit() == 0 || !event.isRequestModeration()) {
+                String message = String.format("Event (eventId = %d) does not require request confirmation", eventId);
+                throw new ConflictException(message);
+            }
+
+            int numberOfConfirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+
+            if (numberOfConfirmedRequests >= event.getParticipantLimit()) {
+                throw new ConflictException("The participant limit has been reached");
+            }
+
+            for (Request request : requests) {
+                if (request.getStatus() == RequestStatus.PENDING) {
+                    if (numberOfConfirmedRequests < event.getParticipantLimit()) {
+                        request.setStatus(RequestStatus.CONFIRMED);
+                        numberOfConfirmedRequests++;
+                        response.getConfirmedRequests().add(RequestMapper.mapRequestToRequestDto(request));
+                    } else {
+                        request.setStatus(RequestStatus.REJECTED);
+                        response.getRejectedRequests().add(RequestMapper.mapRequestToRequestDto(request));
+                    }
+                } else {
+                    throw new BadRequestException("Request must have status PENDING");
+                }
+            }
+
+            requestRepository.saveAll(requests);
+
+        } else if (statusChangeRequest.getStatus() == RequestStatus.REJECTED) {
+            requests.forEach(request -> {
+                if (request.getStatus() == RequestStatus.PENDING) {
+                    request.setStatus(RequestStatus.REJECTED);
+                    response.getRejectedRequests().add(RequestMapper.mapRequestToRequestDto(request));
+                } else {
+                    throw new BadRequestException("Request must have status PENDING");
+                }
+            });
+            requestRepository.saveAll(requests);
+        } else {
+            String message = String.format(
+                    "Allowed statuses: %s, %s",
+                    RequestStatus.CONFIRMED.toString(),
+                    RequestStatus.REJECTED.toString()
+            );
+            throw new BadRequestException(message);
+        }
+
+        return response;
     }
 
     @Transactional
@@ -154,7 +274,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event));
+        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
     }
 
     public Collection<EventDto> findEventsAdmin(
@@ -207,11 +327,16 @@ public class EventService {
 
         Collection<Event> events = eventRepository.findAll(spec, pageable).toList();
         Map<String, Integer> views = getViewsForEvents(events);
+        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
 
         return events
                 .stream()
                 .map(event -> {
-                    return EventMapper.mapEventToEventDto(event, findViewsForEvent(views, event));
+                    return EventMapper.mapEventToEventDto(
+                            event,
+                            findViewsForEvent(views, event),
+                            confirmedRequestsCounts.getOrDefault(event.getId(), 0)
+                    );
                 })
                 .toList();
     }
@@ -224,7 +349,7 @@ public class EventService {
 
         saveHit(ip, uri);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event));
+        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
     }
 
     public Collection<EventDto> findEventsPublic(
@@ -278,9 +403,14 @@ public class EventService {
 
         Collection<Event> events = eventRepository.findAll(spec, sortBy);
         Map<String, Integer> views = getViewsForEvents(events);
+        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
 
         List<EventDto> result = events.stream()
-                .map(event -> EventMapper.mapEventToEventDto(event, findViewsForEvent(views, event)))
+                .map(event -> EventMapper.mapEventToEventDto(
+                        event,
+                        findViewsForEvent(views, event),
+                        confirmedRequestsCounts.getOrDefault(event.getId(), 0)
+                ))
                 .collect(Collectors.toList());
 
         if (sort != null && sort.equals(EventSort.VIEWS)) {
@@ -312,6 +442,22 @@ public class EventService {
         Collection<String> uris = events.stream()
                 .map((event) -> "/events/" + event.getId()).toList();
         return statsClient.getViews(uris);
+    }
+
+    private int getConfirmedRequestsForEventCount(Event event) {
+        return requestRepository.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
+    }
+
+    private Map<Long, Integer> getConfirmedRequestsCounts(Collection<Event> events) {
+        Map<Long, Integer> result = new HashMap<>();
+        Collection<ConfirmedRequestsCount> confirmedRequestCounts = requestRepository.getRequestsCountByStatus(
+                RequestStatus.CONFIRMED,
+                events.stream().map(Event::getId).toList()
+        );
+        confirmedRequestCounts.forEach(confirmedRequestsCount ->
+            result.put(confirmedRequestsCount.getEventId(), confirmedRequestsCount.getCount())
+        );
+        return result;
     }
 
 }
