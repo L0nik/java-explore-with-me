@@ -54,7 +54,7 @@ public class EventControllerPrivate {
     public EventDto patchEventOfUser(
             @PathVariable Long userId,
             @PathVariable Long eventId,
-            @RequestBody EventDtoPatch eventData
+            @RequestBody @Valid EventDtoPatch eventData
     ) {
         log.info(
                 "EventControllerPrivate: изменение события пользователем (userId = {}, eventId = {}, eventData = {})",
@@ -82,7 +82,7 @@ public class EventControllerPrivate {
     public RequestStatusChangeResponse changeRequestsStatusesForEvent(
             @PathVariable Long userId,
             @PathVariable Long eventId,
-            @RequestBody RequestStatusChangeRequest statusChangeRequest
+            @RequestBody @Valid RequestStatusChangeRequest statusChangeRequest
     ) {
         log.info("""
                     EventControllerPrivate: изменение статуса заявок на участие в событии текущего пользователя

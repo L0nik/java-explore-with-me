@@ -11,7 +11,6 @@ import ru.practicum.ewm.events.dto.EventDto;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 
 @RestController
 @RequestMapping("/events")

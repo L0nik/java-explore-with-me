@@ -3,8 +3,6 @@ package ru.practicum.ewm.request;
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.request.dto.RequestDto;
 
-import java.time.LocalDateTime;
-
 @UtilityClass
 public class RequestMapper {
 

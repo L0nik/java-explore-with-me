@@ -33,7 +33,7 @@ public class CompilationControllerPublic {
         return compilationService.getCompilations(pinned, from, size);
     }
 
-    @GetMapping("/compilationId")
+    @GetMapping("/{compilationId}")
     public CompilationDto getCompilationById(@PathVariable Long compilationId) {
         log.info("CompilationControllerPublic: получение компиляции событий по id (compilationId = {})", compilationId);
         return compilationService.getCompilationById(compilationId);

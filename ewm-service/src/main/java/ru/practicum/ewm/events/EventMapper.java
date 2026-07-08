@@ -2,10 +2,7 @@ package ru.practicum.ewm.events;
 
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.category.CategoryMapper;
-import ru.practicum.ewm.events.dto.EventDto;
-import ru.practicum.ewm.events.dto.EventDtoPatch;
-import ru.practicum.ewm.events.dto.EventDtoPost;
-import ru.practicum.ewm.events.dto.LocationDto;
+import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.users.UserMapper;
 
@@ -28,6 +25,20 @@ public class EventMapper {
         dto.setPublishedOn(event.getPublishedOn());
         dto.setState(event.getState());
         dto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
+        dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
+        dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
+        dto.setViews(views);
+        dto.setConfirmedRequests(confirmedRequests);
+        return dto;
+    }
+
+    public EventDtoShort mapEventToEventDtoShort(Event event, int views, int confirmedRequests) {
+        EventDtoShort dto = new EventDtoShort();
+        dto.setId(event.getId());
+        dto.setAnnotation(event.getAnnotation());
+        dto.setEventDate(event.getEventDate());
+        dto.setPaid(event.isPaid());
+        dto.setTitle(event.getTitle());
         dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
         dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
         dto.setViews(views);

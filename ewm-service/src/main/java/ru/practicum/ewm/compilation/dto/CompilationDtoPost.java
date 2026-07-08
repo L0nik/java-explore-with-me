@@ -2,18 +2,20 @@ package ru.practicum.ewm.compilation.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.util.Collection;
+import java.util.Set;
 
 @Data
 public class CompilationDtoPost {
 
     @NotEmpty
-    private Collection<Long> events;
+    private Set<Long> events;
 
-    boolean pinned;
+    private boolean pinned;
 
     @NotBlank
-    String title;
+    @Size(max = 50)
+    private String title;
 }

@@ -8,15 +8,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import ru.practicum.ewm.category.Category;
 import ru.practicum.ewm.category.CategoryRepository;
 import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
 import ru.practicum.ewm.exception.BadRequestException;
-import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.exception.ConflictException;
+import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.request.*;
 import ru.practicum.ewm.request.dto.RequestDto;
 import ru.practicum.ewm.request.dto.RequestStatusChangeRequest;
@@ -42,22 +41,13 @@ public class EventService {
     private final RequestRepository requestRepository;
 
     private final StatsClient statsClient;
+    private final EventEnricher eventEnricher;
 
     public Collection<EventDto> getEventsPrivate(Long userId, int from, int size) {
         log.info("EventService: получение событий пользователя (userId = {}, from = {}, size = {})", userId, from, size);
         Pageable pageable = PageRequest.of(from / size, size);
         Collection<Event> events = eventRepository.findByInitiatorId(userId, pageable);
-        Map<String, Integer> views = getViewsForEvents(events);
-        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
-        return events.stream()
-                .map(event ->
-                        EventMapper.mapEventToEventDto(
-                                event,
-                                findViewsForEvent(views, event),
-                                confirmedRequestsCounts.getOrDefault(event.getId(), 0)
-                        )
-                )
-                .toList();
+        return eventEnricher.toEventDtos(events);
     }
 
     @Transactional
@@ -89,7 +79,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+        return eventEnricher.toEventDto(event);
 
     }
 
@@ -105,7 +95,7 @@ public class EventService {
                 () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
         );
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+        return eventEnricher.toEventDto(event);
     }
 
     @Transactional
@@ -141,7 +131,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+        return eventEnricher.toEventDto(event);
     }
 
     public Collection<RequestDto> getRequestsForEventPrivate(Long userId, Long eventId) {
@@ -274,7 +264,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+        return eventEnricher.toEventDto(event);
     }
 
     public Collection<EventDto> findEventsAdmin(
@@ -326,19 +316,9 @@ public class EventService {
         }
 
         Collection<Event> events = eventRepository.findAll(spec, pageable).toList();
-        Map<String, Integer> views = getViewsForEvents(events);
-        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
 
-        return events
-                .stream()
-                .map(event -> {
-                    return EventMapper.mapEventToEventDto(
-                            event,
-                            findViewsForEvent(views, event),
-                            confirmedRequestsCounts.getOrDefault(event.getId(), 0)
-                    );
-                })
-                .toList();
+        return eventEnricher.toEventDtos(events);
+
     }
 
     public EventDto getEventByIdPublic(Long eventId, String ip, String uri) {
@@ -349,7 +329,7 @@ public class EventService {
 
         saveHit(ip, uri);
 
-        return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+        return eventEnricher.toEventDto(event);
     }
 
     public Collection<EventDto> findEventsPublic(
@@ -402,16 +382,8 @@ public class EventService {
         }
 
         Collection<Event> events = eventRepository.findAll(spec, sortBy);
-        Map<String, Integer> views = getViewsForEvents(events);
-        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
 
-        List<EventDto> result = events.stream()
-                .map(event -> EventMapper.mapEventToEventDto(
-                        event,
-                        findViewsForEvent(views, event),
-                        confirmedRequestsCounts.getOrDefault(event.getId(), 0)
-                ))
-                .collect(Collectors.toList());
+        List<EventDto> result = new ArrayList<>(eventEnricher.toEventDtos(events));
 
         if (sort != null && sort.equals(EventSort.VIEWS)) {
             result.sort(Comparator.comparing(EventDto::getViews).reversed());
@@ -427,37 +399,6 @@ public class EventService {
         hitCreateDto.setIp(ip);
         hitCreateDto.setTimestamp(LocalDateTime.now());
         statsClient.postHit(hitCreateDto);
-    }
-
-    private int findViewsForEvent(Map<String, Integer> views, Event event) {
-        return views.getOrDefault("/events/" + event.getId(), 0);
-    }
-
-    private int getViewsForEvent(Event event) {
-        Collection<String> uris = List.of("/events/" + event.getId());
-        return findViewsForEvent(statsClient.getViews(uris), event);
-    }
-
-    private Map<String, Integer> getViewsForEvents(Collection<Event> events) {
-        Collection<String> uris = events.stream()
-                .map((event) -> "/events/" + event.getId()).toList();
-        return statsClient.getViews(uris);
-    }
-
-    private int getConfirmedRequestsForEventCount(Event event) {
-        return requestRepository.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
-    }
-
-    private Map<Long, Integer> getConfirmedRequestsCounts(Collection<Event> events) {
-        Map<Long, Integer> result = new HashMap<>();
-        Collection<ConfirmedRequestsCount> confirmedRequestCounts = requestRepository.getRequestsCountByStatus(
-                RequestStatus.CONFIRMED,
-                events.stream().map(Event::getId).toList()
-        );
-        confirmedRequestCounts.forEach(confirmedRequestsCount ->
-            result.put(confirmedRequestsCount.getEventId(), confirmedRequestsCount.getCount())
-        );
-        return result;
     }
 
 }

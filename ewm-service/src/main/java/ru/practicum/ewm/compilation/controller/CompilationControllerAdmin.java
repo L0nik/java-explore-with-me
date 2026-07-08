@@ -1,5 +1,6 @@
 package ru.practicum.ewm.compilation.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,7 @@ public class CompilationControllerAdmin {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CompilationDto createCompilation(@RequestBody CompilationDtoPost compilationData) {
+    public CompilationDto createCompilation(@RequestBody @Valid CompilationDtoPost compilationData) {
         log.info(
                 "CompilationControllerAdmin: создание компиляции событий администратором (compilationData = {})",
                 compilationData
@@ -40,7 +41,7 @@ public class CompilationControllerAdmin {
     @PatchMapping("/{compilationId}")
     public CompilationDto patchCompilation(
             @PathVariable Long compilationId,
-            @RequestBody CompilationDtoPatch compilationData
+            @RequestBody @Valid CompilationDtoPatch compilationData
     ) {
         log.info(
                 """

@@ -7,16 +7,14 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.events.Event;
 import ru.practicum.ewm.events.EventRepository;
 import ru.practicum.ewm.events.EventState;
-import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.exception.ConflictException;
+import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.request.dto.RequestDto;
 import ru.practicum.ewm.users.UserRepository;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Collection;
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
