@@ -31,14 +31,14 @@ public class StatsClient {
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-    private final static LocalDateTime MIN_VIEWS_DATE =
+    private static final LocalDateTime MIN_VIEWS_DATE =
             LocalDateTime.of(2000, 1, 1, 0, 0, 0);
 
     public StatsClient(@Value("${services.stats-service.url}") String baseUrl) {
         this.baseUrl = baseUrl;
     }
 
-    public void postHit(HitCreateDto hitData){
+    public void postHit(HitCreateDto hitData) {
         String url = baseUrl + "/hit";
         try {
             HttpRequest request = HttpRequest.newBuilder()
