@@ -3,6 +3,7 @@ package ru.practicum.ewm.events;
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.category.CategoryMapper;
 import ru.practicum.ewm.events.dto.*;
+import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.users.UserMapper;
 
@@ -80,7 +81,7 @@ public class EventMapper {
                         "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: %s",
                         dto.getEventDate()
                 );
-                throw new ConflictException(message);
+                throw new BadRequestException(message);
             } else {
                 event.setEventDate(dto.getEventDate());
             }

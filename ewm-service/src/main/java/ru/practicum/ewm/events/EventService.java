@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,7 +74,7 @@ public class EventService {
                     "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: %s",
                     eventData.getEventDate()
             );
-            throw new ConflictException(message);
+            throw new BadRequestException(message);
         }
 
         Event event = EventMapper.mapEventDtoPostToEvent(eventData);
@@ -217,7 +218,7 @@ public class EventService {
                         response.getRejectedRequests().add(RequestMapper.mapRequestToRequestDto(request));
                     }
                 } else {
-                    throw new BadRequestException("Request must have status PENDING");
+                    throw new ConflictException("Request must have status PENDING");
                 }
             }
 
@@ -229,7 +230,7 @@ public class EventService {
                     request.setStatus(RequestStatus.REJECTED);
                     response.getRejectedRequests().add(RequestMapper.mapRequestToRequestDto(request));
                 } else {
-                    throw new BadRequestException("Request must have status PENDING");
+                    throw new ConflictException("Request must have status PENDING");
                 }
             });
             requestRepository.saveAll(requests);
@@ -298,7 +299,7 @@ public class EventService {
 
         Pageable pageable = PageRequest.of(from / size, size);
 
-        Specification<Event> spec = Specification.where(EventSpecification.withFetch());
+        Specification<Event> spec = Specification.where(null);
 
         if (users != null) {
             spec = spec.and(EventSpecification.initiatorIn(users));
@@ -320,7 +321,11 @@ public class EventService {
             spec = spec.and(EventSpecification.eventDateBefore(rangeEnd));
         }
 
-        Collection<Event> events = eventRepository.findAll(spec, pageable).toList();
+        Collection<Event> eventsLazy = eventRepository.findAll(spec, pageable).toList();
+
+        Collection<Event> events = eventRepository.findByIdIn(
+                eventsLazy.stream().map(Event::getId).collect(Collectors.toSet())
+        );
 
         return eventEnricher.toEventDtos(events);
 
@@ -351,12 +356,19 @@ public class EventService {
             String uri
     ) {
 
+        if (rangeStart != null && rangeEnd != null) {
+            if (rangeEnd.isBefore(rangeStart)) {
+                throw new BadRequestException(String.format(
+                        "rangeStart = %s should be before rangeEnd = %s",
+                        rangeStart,
+                        rangeEnd
+                ));
+            }
+        }
+
         saveHit(ip, uri);
 
-        Sort sortBy = Sort.by("eventDate").ascending();
-
-        Specification<Event> spec = Specification.where(EventSpecification.withFetch())
-                .and(EventSpecification.stateIn(List.of(EventState.PUBLISHED)));
+        Specification<Event> spec = Specification.where(EventSpecification.stateIn(List.of(EventState.PUBLISHED)));
 
         if (text != null) {
             spec = spec.and(EventSpecification.containsText(text));
@@ -386,12 +398,17 @@ public class EventService {
             spec = spec.and(EventSpecification.isAvailable());
         }
 
-        Collection<Event> events = eventRepository.findAll(spec, sortBy);
+        Collection<Event> eventsLazy = eventRepository.findAll(spec);
+        Collection<Event> events = eventRepository.findByIdIn(
+                eventsLazy.stream().map(Event::getId).collect(Collectors.toSet())
+        );
 
         List<EventDto> result = new ArrayList<>(eventEnricher.toEventDtos(events));
 
         if (sort != null && sort.equals(EventSort.VIEWS)) {
             result.sort(Comparator.comparing(EventDto::getViews).reversed());
+        } else {
+            result.sort(Comparator.comparing(EventDto::getEventDate));
         }
 
         return result.stream().skip(from).limit(size).toList();

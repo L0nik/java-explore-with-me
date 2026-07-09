@@ -10,7 +10,6 @@ import java.util.Set;
 @Data
 public class CompilationDtoPost {
 
-    @NotEmpty
     private Set<Long> events;
 
     private boolean pinned;

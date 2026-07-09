@@ -9,17 +9,6 @@ import java.util.Collection;
 @UtilityClass
 public class EventSpecification {
 
-    public Specification<Event> withFetch() {
-        return (root, query, cb) -> {
-            root.fetch("category");
-            root.fetch("initiator");
-            if (query != null) {
-                query.distinct(true);
-            }
-            return cb.conjunction();
-        };
-    }
-
     public Specification<Event> initiatorIn(Collection<Long> users) {
         return (root, query, cb) ->
                 root.get("initiator").get("id").in(users);

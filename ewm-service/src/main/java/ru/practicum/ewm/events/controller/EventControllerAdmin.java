@@ -1,5 +1,6 @@
 package ru.practicum.ewm.events.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -35,7 +36,7 @@ public class EventControllerAdmin {
     }
 
     @PatchMapping("/{eventId}")
-    public EventDto patchEvent(@PathVariable Long eventId, @RequestBody EventDtoPatch eventData) {
+    public EventDto patchEvent(@PathVariable Long eventId, @RequestBody @Valid EventDtoPatch eventData) {
         log.info("EventControllerAdmin: изменение данных события (eventId = {}, eventData = {})", eventId, eventData);
         return eventService.patchEventAdmin(eventId, eventData);
     }

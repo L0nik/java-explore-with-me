@@ -122,7 +122,7 @@ public class StatsClient {
     }
 
     public Map<String, Integer> getViews(Collection<String> uris) {
-        List<StatsResponseDto> stats =  getStats(MIN_VIEWS_DATE, LocalDateTime.now(), uris);
+        List<StatsResponseDto> stats =  getStats(MIN_VIEWS_DATE, LocalDateTime.now(), uris, true);
         Map<String, Integer> views = new HashMap<>();
         stats.forEach(statsResponseDto ->
                 views.put(

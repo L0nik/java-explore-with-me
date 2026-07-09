@@ -73,14 +73,17 @@ public class RequestService {
         }
 
         int confirmedRequests = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-        if (event.getParticipantLimit() <= confirmedRequests) {
+        if (event.getParticipantLimit() > 0 && event.getParticipantLimit() <= confirmedRequests) {
             throw new ConflictException("The participant limit has been reached");
         }
 
         Request request = new Request();
         request.setEventId(eventId);
         request.setRequesterId(userId);
-        request.setStatus(event.isRequestModeration() ? RequestStatus.PENDING : RequestStatus.CONFIRMED);
+        request.setStatus(
+                !event.isRequestModeration() || event.getParticipantLimit() == 0 ?
+                        RequestStatus.CONFIRMED : RequestStatus.PENDING
+        );
         request.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS));
 
         requestRepository.save(request);
