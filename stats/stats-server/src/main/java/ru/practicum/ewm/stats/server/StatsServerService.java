@@ -2,8 +2,10 @@ package ru.practicum.ewm.stats.server;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.ewm.stats.dto.HitCreateDto;
 import ru.practicum.ewm.stats.dto.StatsResponseDto;
 
@@ -33,6 +35,9 @@ public class StatsServerService {
             Boolean unique
     ) {
         log.info("StatsServerService: получение статистики");
+        if (end.isBefore(start)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "start date must be before end date");
+        }
         Collection<StatsView> stats = statsRepository.getStats(start, end, uris, unique);
         log.info("StatsServerService: статистика получена {}", stats);
         return stats.stream()
