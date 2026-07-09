@@ -16,7 +16,10 @@ import ru.practicum.ewm.events.dto.EventDtoPost;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.request.*;
+import ru.practicum.ewm.request.Request;
+import ru.practicum.ewm.request.RequestMapper;
+import ru.practicum.ewm.request.RequestRepository;
+import ru.practicum.ewm.request.RequestStatus;
 import ru.practicum.ewm.request.dto.RequestDto;
 import ru.practicum.ewm.request.dto.RequestStatusChangeRequest;
 import ru.practicum.ewm.request.dto.RequestStatusChangeResponse;
@@ -26,8 +29,10 @@ import ru.practicum.ewm.users.User;
 import ru.practicum.ewm.users.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

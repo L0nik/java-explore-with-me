@@ -2,6 +2,8 @@ package ru.practicum.ewm.compilation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.compilation.dto.CompilationDto;
@@ -9,14 +11,12 @@ import ru.practicum.ewm.compilation.dto.CompilationDtoPatch;
 import ru.practicum.ewm.compilation.dto.CompilationDtoPost;
 import ru.practicum.ewm.events.Event;
 import ru.practicum.ewm.events.EventEnricher;
-import ru.practicum.ewm.events.EventMapper;
 import ru.practicum.ewm.events.EventRepository;
 import ru.practicum.ewm.events.dto.EventDtoShort;
 import ru.practicum.ewm.exception.NotFoundException;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -115,7 +115,28 @@ public class CompilationService {
                 size
         );
 
-        return List.of();
+        Pageable pageable = PageRequest.of(from / size, size);
+
+        Collection<Compilation> compilationsLazy;
+
+        if (pinned == null) {
+            compilationsLazy = compilationRepository.findAll(pageable).getContent();
+        } else {
+            compilationsLazy = compilationRepository.findByPinned(pinned, pageable).getContent();
+        }
+
+        Collection<Long> compilationIds = compilationsLazy.stream()
+                .map(Compilation::getId)
+                .toList();
+
+        Collection<Compilation> compilations = compilationRepository.findByIdIn(compilationIds);
+
+        return compilations.stream()
+                .map(compilation -> CompilationMapper.mapCompilationToCompilationDto(
+                        compilation,
+                        eventEnricher.toShortEventDtos(compilation.getEvents())
+                ))
+                .toList();
     }
 
     public CompilationDto getCompilationById(Long compilationId) {
