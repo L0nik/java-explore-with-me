@@ -68,7 +68,7 @@ public class EventService {
                 () -> new NotFoundException(String.format("Category with id = %d not found", eventData.getCategory()))
         );
 
-        if(eventData.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+        if (eventData.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
             String message = String.format(
                     "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: %s",
                     eventData.getEventDate()

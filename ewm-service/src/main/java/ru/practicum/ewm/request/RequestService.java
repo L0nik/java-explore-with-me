@@ -58,7 +58,7 @@ public class RequestService {
                     userId
             );
             throw new ConflictException(message);
-        };
+        }
 
         Event event = eventRepository.findById(eventId).orElseThrow(
                 () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
