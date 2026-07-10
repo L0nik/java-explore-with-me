@@ -9,6 +9,7 @@ import ru.practicum.ewm.request.RequestRepository;
 import ru.practicum.ewm.request.RequestStatus;
 import ru.practicum.ewm.stats.client.StatsClient;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,7 +58,7 @@ public class EventEnricher {
 
     private int getViewsForEvent(Event event) {
         Collection<String> uris = List.of("/events/" + event.getId());
-        return findViewsForEvent(statsClient.getViews(uris), event);
+        return findViewsForEvent(statsClient.getViews(uris, event.getPublishedOn(), LocalDateTime.now()), event);
     }
 
     private Map<String, Integer> getViewsForEvents(Collection<Event> events) {

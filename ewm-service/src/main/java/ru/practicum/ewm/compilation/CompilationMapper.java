@@ -35,7 +35,7 @@ public class CompilationMapper {
             compilation.setPinned(dto.getPinned());
         }
 
-        if (dto.getTitle() != null) {
+        if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
             compilation.setTitle(dto.getTitle());
         }
 

@@ -134,4 +134,17 @@ public class StatsClient {
         );
         return views;
     }
+
+    public Map<String, Integer> getViews(Collection<String> uris, LocalDateTime start, LocalDateTime end) {
+        List<StatsResponseDto> stats =  getStats(start, end, uris, true);
+        Map<String, Integer> views = new HashMap<>();
+        stats.forEach(statsResponseDto ->
+                views.put(
+                        statsResponseDto.getUri(),
+                        statsResponseDto.getHits() + views.getOrDefault(statsResponseDto.getUri(), 0)
+                )
+        );
+        return views;
+    }
+
 }

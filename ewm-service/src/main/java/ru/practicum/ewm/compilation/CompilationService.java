@@ -2,6 +2,7 @@ package ru.practicum.ewm.compilation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -117,12 +118,12 @@ public class CompilationService {
 
         Pageable pageable = PageRequest.of(from / size, size);
 
-        Collection<Compilation> compilationsLazy;
+        Page<Compilation> compilationsLazy;
 
         if (pinned == null) {
-            compilationsLazy = compilationRepository.findAll(pageable).getContent();
+            compilationsLazy = compilationRepository.findAll(pageable);
         } else {
-            compilationsLazy = compilationRepository.findByPinned(pinned, pageable).getContent();
+            compilationsLazy = compilationRepository.findByPinned(pinned, pageable);
         }
 
         Collection<Long> compilationIds = compilationsLazy.stream()

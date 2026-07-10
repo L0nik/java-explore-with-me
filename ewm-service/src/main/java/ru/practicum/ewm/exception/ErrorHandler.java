@@ -3,6 +3,7 @@ package ru.practicum.ewm.exception;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -42,12 +43,21 @@ public class ErrorHandler {
 
         FieldError fieldError = ex.getBindingResult().getFieldError();
 
-        String message = String.format(
-                "Field: %s. Error: %s. Value: %s",
-                fieldError.getField(),
-                fieldError.getDefaultMessage(),
-                fieldError.getRejectedValue()
-        );
+        String message;
+
+        if (fieldError != null) {
+            message = String.format(
+                    "Field: %s. Error: %s. Value: %s",
+                    fieldError.getField(),
+                    fieldError.getDefaultMessage(),
+                    fieldError.getRejectedValue()
+            );
+        } else {
+            message = ex.getBindingResult().getGlobalErrors().stream()
+                    .findFirst()
+                    .map(ObjectError::getDefaultMessage)
+                    .orElse("Validation failed");
+        }
 
         return new ErrorResponse(
                 "BAD_REQUEST",

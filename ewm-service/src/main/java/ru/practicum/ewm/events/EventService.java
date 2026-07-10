@@ -153,8 +153,16 @@ public class EventService {
             throw new NotFoundException(String.format("User with id = %d not found", userId));
         }
 
-        if (!eventRepository.existsById(eventId)) {
-            throw new NotFoundException(String.format("Event with id = %d not found", eventId));
+        Event event = eventRepository.findById(eventId).orElseThrow(
+                () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
+        );
+
+        if (!event.getInitiator().getId().equals(userId)) {
+            throw new ConflictException(String.format(
+                    "User with id = %d is not initiator of event with id = %d",
+                    userId,
+                    eventId
+            ));
         }
 
         return requestRepository.findByEventId(eventId).stream()
@@ -236,8 +244,8 @@ public class EventService {
         } else {
             String message = String.format(
                     "Allowed statuses: %s, %s",
-                    RequestStatus.CONFIRMED.toString(),
-                    RequestStatus.REJECTED.toString()
+                    RequestStatus.CONFIRMED,
+                    RequestStatus.REJECTED
             );
             throw new BadRequestException(message);
         }
