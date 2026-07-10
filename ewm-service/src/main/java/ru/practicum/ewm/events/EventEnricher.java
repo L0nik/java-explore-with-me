@@ -58,7 +58,7 @@ public class EventEnricher {
 
     private int getViewsForEvent(Event event) {
         Collection<String> uris = List.of("/events/" + event.getId());
-        return findViewsForEvent(statsClient.getViews(uris, event.getPublishedOn(), LocalDateTime.now()), event);
+        return findViewsForEvent(statsClient.getViews(uris, event.getCreatedOn(), LocalDateTime.now()), event);
     }
 
     private Map<String, Integer> getViewsForEvents(Collection<Event> events) {
