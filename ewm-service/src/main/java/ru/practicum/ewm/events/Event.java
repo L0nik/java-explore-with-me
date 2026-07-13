@@ -62,4 +62,7 @@ public class Event {
     @Column(nullable = false)
     private EventState state;
 
+    @Column(name = "revision_number", nullable = false)
+    private int revisionNumber;
+
 }

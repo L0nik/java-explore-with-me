@@ -106,6 +106,9 @@ public class EventMapper {
         StateAction stateAction = dto.getStateAction();
         if (stateAction != null) {
             if (stateAction.equals(StateAction.SEND_TO_REVIEW)) {
+                if (event.getState().equals(EventState.REQUIRES_ADJUSTMENT)) {
+                    event.setRevisionNumber(event.getRevisionNumber() + 1);
+                }
                 event.setState(EventState.PENDING);
             } else if (stateAction.equals(StateAction.CANCEL_REVIEW)) {
                 event.setState(EventState.CANCELED);
@@ -123,6 +126,13 @@ public class EventMapper {
                     );
                 }
                 event.setState(EventState.CANCELED);
+            } else if (byAdmin && stateAction.equals(StateAction.SEND_TO_ADJUSTMENT)) {
+                if (!event.getState().equals(EventState.PENDING)) {
+                    throw new ConflictException(
+                            "Cannot reject the event because it's not in the right state: " + event.getState()
+                    );
+                }
+                event.setState(EventState.REQUIRES_ADJUSTMENT);
             }
         }
 

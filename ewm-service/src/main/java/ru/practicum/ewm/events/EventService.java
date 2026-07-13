@@ -81,6 +81,7 @@ public class EventService {
         event.setInitiator(initiator);
         event.setCreatedOn(LocalDateTime.now());
         event.setState(EventState.PENDING);
+        event.setRevisionNumber(1);
 
         eventRepository.save(event);
 
