@@ -5,31 +5,30 @@ import ru.practicum.ewm.category.CategoryMapper;
 import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
+import ru.practicum.ewm.moderation.dto.ModerationCommentDto;
 import ru.practicum.ewm.users.UserMapper;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 @UtilityClass
 public class EventMapper {
 
     public EventDto mapEventToEventDto(Event event, int views, int confirmedRequests) {
         EventDto dto = new EventDto();
-        dto.setId(event.getId());
-        dto.setAnnotation(event.getAnnotation());
-        dto.setDescription(event.getDescription());
-        dto.setEventDate(event.getEventDate());
-        dto.setPaid(event.isPaid());
-        dto.setParticipantLimit(event.getParticipantLimit());
-        dto.setRequestModeration(event.isRequestModeration());
-        dto.setTitle(event.getTitle());
-        dto.setCreatedOn(event.getCreatedOn());
-        dto.setPublishedOn(event.getPublishedOn());
-        dto.setState(event.getState());
-        dto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
-        dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
-        dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
-        dto.setViews(views);
-        dto.setConfirmedRequests(confirmedRequests);
+        fillEventDto(dto, event, views, confirmedRequests);
+        return dto;
+    }
+
+    public EventDtoPrivate mapEventToEventDtoPrivate(
+            Event event,
+            int views,
+            int confirmedRequests,
+            Collection<ModerationCommentDto> moderationComments
+    ) {
+        EventDtoPrivate dto = new EventDtoPrivate();
+        fillEventDto(dto, event, views, confirmedRequests);
+        dto.setModerationComments(moderationComments);
         return dto;
     }
 
@@ -139,6 +138,25 @@ public class EventMapper {
         if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
             event.setTitle(dto.getTitle());
         }
+    }
+
+    private void fillEventDto(EventDto dto, Event event, int views, int confirmedRequests) {
+        dto.setId(event.getId());
+        dto.setAnnotation(event.getAnnotation());
+        dto.setDescription(event.getDescription());
+        dto.setEventDate(event.getEventDate());
+        dto.setPaid(event.isPaid());
+        dto.setParticipantLimit(event.getParticipantLimit());
+        dto.setRequestModeration(event.isRequestModeration());
+        dto.setTitle(event.getTitle());
+        dto.setCreatedOn(event.getCreatedOn());
+        dto.setPublishedOn(event.getPublishedOn());
+        dto.setState(event.getState());
+        dto.setLocation(new LocationDto(event.getLocation().getLat(), event.getLocation().getLon()));
+        dto.setInitiator(UserMapper.mapUserToUserDtoShort(event.getInitiator()));
+        dto.setCategory(CategoryMapper.mapCategoryToCategoryDto(event.getCategory()));
+        dto.setViews(views);
+        dto.setConfirmedRequests(confirmedRequests);
     }
 
 }

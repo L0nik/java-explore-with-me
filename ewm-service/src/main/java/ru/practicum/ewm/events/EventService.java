@@ -9,12 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.category.Category;
 import ru.practicum.ewm.category.CategoryRepository;
-import ru.practicum.ewm.events.dto.EventDto;
-import ru.practicum.ewm.events.dto.EventDtoPatch;
-import ru.practicum.ewm.events.dto.EventDtoPost;
+import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.moderation.ModerationComment;
+import ru.practicum.ewm.moderation.ModerationCommentMapper;
+import ru.practicum.ewm.moderation.ModerationCommentService;
 import ru.practicum.ewm.request.Request;
 import ru.practicum.ewm.request.RequestMapper;
 import ru.practicum.ewm.request.RequestRepository;
@@ -45,14 +46,16 @@ public class EventService {
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
 
+    private final ModerationCommentService moderationCommentService;
+
     private final StatsClient statsClient;
     private final EventEnricher eventEnricher;
 
-    public Collection<EventDto> getEventsPrivate(Long userId, int from, int size) {
+    public Collection<EventDtoPrivate> getEventsPrivate(Long userId, int from, int size) {
         log.info("EventService: получение событий пользователя (userId = {}, from = {}, size = {})", userId, from, size);
         Pageable pageable = PageRequest.of(from / size, size);
         Collection<Event> events = eventRepository.findByInitiatorId(userId, pageable);
-        return eventEnricher.toEventDtos(events);
+        return eventEnricher.toPrivateEventDtos(events);
     }
 
     @Transactional
@@ -89,7 +92,7 @@ public class EventService {
 
     }
 
-    public EventDto getEventByIdPrivate(Long userId, Long eventId) {
+    public EventDtoPrivate getEventByIdPrivate(Long userId, Long eventId) {
 
         log.info("EventService: получения события пользователя (userId = {}, eventId = {})", userId, eventId);
 
@@ -101,7 +104,7 @@ public class EventService {
                 () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
         );
 
-        return eventEnricher.toEventDto(event);
+        return eventEnricher.toEventDtoPrivate(event);
     }
 
     @Transactional
@@ -255,7 +258,7 @@ public class EventService {
     }
 
     @Transactional
-    public EventDto patchEventAdmin(Long eventId, EventDtoPatch eventData) {
+    public EventDto patchEventAdmin(Long eventId, EventDtoPatchAdmin eventData) {
 
         log.info(
                 "EventService: изменение события администратором (eventId = {}, eventData = {})",
@@ -275,6 +278,13 @@ public class EventService {
         }
 
         EventMapper.updateEvent(event, eventData, true);
+
+        if (eventData.getStateAction() != null && eventData.getStateAction().equals(StateAction.SEND_TO_ADJUSTMENT)) {
+            if (eventData.getModerationComments() == null) {
+                throw new ConflictException("Moderation comments required to send event to adjustment");
+            }
+            moderationCommentService.addComments(event, eventData.getModerationComments());
+        }
 
         eventRepository.save(event);
 

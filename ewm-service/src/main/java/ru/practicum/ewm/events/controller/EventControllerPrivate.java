@@ -9,6 +9,7 @@ import ru.practicum.ewm.events.EventService;
 import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
+import ru.practicum.ewm.events.dto.EventDtoPrivate;
 import ru.practicum.ewm.request.dto.RequestDto;
 import ru.practicum.ewm.request.dto.RequestStatusChangeRequest;
 import ru.practicum.ewm.request.dto.RequestStatusChangeResponse;
@@ -24,7 +25,7 @@ public class EventControllerPrivate {
     private final EventService eventService;
 
     @GetMapping
-    public Collection<EventDto> getEventsOfUser(
+    public Collection<EventDtoPrivate> getEventsOfUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int from,
             @RequestParam(defaultValue = "10") int size
@@ -45,7 +46,7 @@ public class EventControllerPrivate {
     }
 
     @GetMapping("/{eventId}")
-    public EventDto getEventOfUser(@PathVariable Long userId, @PathVariable Long eventId) {
+    public EventDtoPrivate getEventOfUser(@PathVariable Long userId, @PathVariable Long eventId) {
         log.info("EventControllerPrivate: получение события пользователя (userId = {}, eventId = {})", userId, eventId);
         return eventService.getEventByIdPrivate(userId, eventId);
     }
