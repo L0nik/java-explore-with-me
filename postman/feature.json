@@ -977,6 +977,7 @@
         "packages": {},
         "requests": {},
         "exec": [
+          "pm.collectionVariables.set('baseUrl', \"http://localhost:8080\");\r",
           "API = class {\r",
           "    constructor(postman, verbose = false, baseUrl = \"http://localhost:8080\") {\r",
           "        this.baseUrl = baseUrl;\r",
