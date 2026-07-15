@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.events.EventService;
-import ru.practicum.ewm.events.dto.EventDto;
 import ru.practicum.ewm.events.dto.EventDtoPatch;
 import ru.practicum.ewm.events.dto.EventDtoPost;
 import ru.practicum.ewm.events.dto.EventDtoPrivate;
@@ -36,7 +35,7 @@ public class EventControllerPrivate {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public EventDto createEventOfUser(@PathVariable Long userId, @RequestBody @Valid EventDtoPost eventData) {
+    public EventDtoPrivate createEventOfUser(@PathVariable Long userId, @RequestBody @Valid EventDtoPost eventData) {
         log.info(
                 "EventControllerPrivate: создание события пользователем (userId = {}, eventData = {})",
                 userId,
@@ -52,7 +51,7 @@ public class EventControllerPrivate {
     }
 
     @PatchMapping("/{eventId}")
-    public EventDto patchEventOfUser(
+    public EventDtoPrivate patchEventOfUser(
             @PathVariable Long userId,
             @PathVariable Long eventId,
             @RequestBody @Valid EventDtoPatch eventData

@@ -29,6 +29,7 @@ public class EventMapper {
         EventDtoPrivate dto = new EventDtoPrivate();
         fillEventDto(dto, event, views, confirmedRequests);
         dto.setModerationComments(moderationComments);
+        dto.setRevisionNumber(event.getRevisionNumber());
         return dto;
     }
 
@@ -128,7 +129,8 @@ public class EventMapper {
             } else if (byAdmin && stateAction.equals(StateAction.SEND_TO_ADJUSTMENT)) {
                 if (!event.getState().equals(EventState.PENDING)) {
                     throw new ConflictException(
-                            "Cannot reject the event because it's not in the right state: " + event.getState()
+                            "Cannot sen event to adjustment the event because it's not in the right state: " +
+                                    event.getState()
                     );
                 }
                 event.setState(EventState.REQUIRES_ADJUSTMENT);

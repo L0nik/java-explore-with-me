@@ -13,8 +13,6 @@ import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.moderation.ModerationComment;
-import ru.practicum.ewm.moderation.ModerationCommentMapper;
 import ru.practicum.ewm.moderation.ModerationCommentService;
 import ru.practicum.ewm.request.Request;
 import ru.practicum.ewm.request.RequestMapper;
@@ -59,7 +57,7 @@ public class EventService {
     }
 
     @Transactional
-    public EventDto createEventPrivate(Long userId, EventDtoPost eventData) {
+    public EventDtoPrivate createEventPrivate(Long userId, EventDtoPost eventData) {
 
         log.info("EventService: создание события пользователем (userId = {}, eventData = {})", userId, eventData);
 
@@ -88,7 +86,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return eventEnricher.toEventDto(event);
+        return eventEnricher.toEventDtoPrivate(event);
 
     }
 
@@ -108,7 +106,7 @@ public class EventService {
     }
 
     @Transactional
-    public EventDto patchEventPrivate(Long userId, Long eventId, EventDtoPatch eventData) {
+    public EventDtoPrivate patchEventPrivate(Long userId, Long eventId, EventDtoPatch eventData) {
 
         log.info(
                 "EventService: изменение события пользователем (userId = {}, eventId = {}, eventData = {})",
@@ -125,7 +123,7 @@ public class EventService {
                 () -> new NotFoundException(String.format("Event with id = %d not found", eventId))
         );
 
-        if (event.getState() != EventState.PENDING && event.getState() != EventState.CANCELED) {
+        if (event.getState() == EventState.PUBLISHED) {
             throw new ConflictException("Event must not be published");
         }
 
@@ -140,7 +138,7 @@ public class EventService {
 
         eventRepository.save(event);
 
-        return eventEnricher.toEventDto(event);
+        return eventEnricher.toEventDtoPrivate(event);
     }
 
     public Collection<RequestDto> getRequestsForEventPrivate(Long userId, Long eventId) {

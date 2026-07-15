@@ -10,4 +10,5 @@ import java.util.Collection;
 @EqualsAndHashCode(callSuper = true)
 public class EventDtoPrivate extends EventDto {
     private Collection<ModerationCommentDto> moderationComments;
+    private int revisionNumber;
 }

@@ -114,15 +114,21 @@ public class EventEnricher {
     }
 
     private Collection<ModerationCommentDto> getModerationCommentsForEvent(Event event) {
-        return moderationCommentRepository.findByEventId(event.getId()).stream()
+        if (event.getState() != EventState.REQUIRES_ADJUSTMENT) {
+            return List.of();
+        }
+        return moderationCommentRepository.findByEventIdAndRevisionNumber(event.getId(), event.getRevisionNumber()).stream()
                 .map(ModerationCommentMapper::mapEntityToModerationCommentDto)
                 .toList();
     }
 
     private Map<Long, Collection<ModerationCommentDto>> getModerationCommentsForEvents(Collection<Event> events) {
         Map<Long, Collection<ModerationCommentDto>> result = new HashMap<>();
-        Collection<Long> eventIds = events.stream().map(Event::getId).toList();
-        moderationCommentRepository.findByEventIdIn(eventIds)
+        Collection<Long> eventIds = events.stream()
+                .filter(event -> event.getState() == EventState.REQUIRES_ADJUSTMENT)
+                .map(Event::getId)
+                .toList();
+        moderationCommentRepository.getCommentsForEvents(eventIds)
                 .forEach((comment) -> {
                     ModerationCommentDto commentDto = ModerationCommentMapper.mapEntityToModerationCommentDto(comment);
                     Long eventId = commentDto.getEventId();
