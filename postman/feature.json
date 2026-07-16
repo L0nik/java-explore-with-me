@@ -1,0 +1,1327 @@
+{
+  "info": {
+    "_postman_id": "fa1923e3-deb2-4e19-bf21-101d7b96440f",
+    "name": "test explore with me - enhanced event moderation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "45643574",
+    "_collection_link": "https://go.postman.co/collection/45643574-fa1923e3-deb2-4e19-bf21-101d7b96440f?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Установка событию статуса REQUIRES_ADJUSTMENT администратором",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "        pm.collectionVariables.set('response', event);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "    } catch(err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => \r",
+              "    {\r",
+              "        try {\r",
+              "            // выполняем наш скрипт\r",
+              "            await main();\r",
+              "        } catch (e) {\r",
+              "            console.error(e);\r",
+              "        } finally {\r",
+              "            clearInterval(interval);\r",
+              "        }\r",
+              "    },  \r",
+              "    100 \r",
+              ");"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const source = pm.collectionVariables.get('response');\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Событие должно содержать поля: id, title, annotation, category, paid, eventDate, initiator, description, participantLimit, state, createdOn, publishedOn, location, requestModeration\", function () {\r",
+              "pm.expect(target).to.have.property('id');\r",
+              "pm.expect(target).to.have.property('title');\r",
+              "pm.expect(target).to.have.property('annotation');\r",
+              "pm.expect(target).to.have.property('category');\r",
+              "pm.expect(target).to.have.property('paid');\r",
+              "pm.expect(target).to.have.property('eventDate');\r",
+              "pm.expect(target).to.have.property('initiator');\r",
+              "pm.expect(target).to.have.property('description');\r",
+              "pm.expect(target).to.have.property('participantLimit');\r",
+              "pm.expect(target).to.have.property('state');\r",
+              "pm.expect(target).to.have.property('createdOn');\r",
+              "pm.expect(target).to.have.property('publishedOn');\r",
+              "pm.expect(target).to.have.property('location');\r",
+              "pm.expect(target).to.have.property('requestModeration');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Данные в ответе должны соответствовать данным в запросе\", function () {\r",
+              "    pm.expect(source.annotation).equal(target.annotation, 'Аннотация события должна соответствовать искомому событию');\r",
+              "    pm.expect(source.paid.toString()).equal(target.paid.toString(), 'Стоимость события должна соответствовать искомому событию');\r",
+              "    pm.expect(source.eventDate).equal(target.eventDate, 'Дата проведения события должна соответствовать искомому событию');\r",
+              "    pm.expect(source.description).equal(target.description, 'Описание события должно соответствовать искомому событию');\r",
+              "    pm.expect(source.title).equal(target.title, 'Название события должно соответствовать искомому событию');\r",
+              "    pm.expect(source.participantLimit.toString()).equal(target.participantLimit.toString(), 'Лимит участников события должен соответствовать искомому событию');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Событие должно получить статус REQUIRES_ADJUSTMENT\", function () {\r",
+              "    pm.expect(target.state).to.eql(\"REQUIRES_ADJUSTMENT\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"stateAction\": \"SEND_TO_ADJUSTMENT\",\r\n    \"moderationComments\": [{\"content\": \"test comment\"}]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Пользователь видит комментарии администратора при получении одного события",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        const moderationComments = [\r",
+              "            {\r",
+              "                content: \"test comment 1\"\r",
+              "            },\r",
+              "            {\r",
+              "                content: \"test comment 2\"\r",
+              "            }\r",
+              "        ];\r",
+              "\r",
+              "        await api.sendToAdjustment(event.id, moderationComments)\r",
+              "\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "        pm.collectionVariables.set(\"moderationComments\", JSON.stringify(moderationComments));\r",
+              "\r",
+              "    } catch (err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => { }, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Событие должно требовать корректировки\", function () {\r",
+              "    pm.expect(body.state).to.eql(\"REQUIRES_ADJUSTMENT\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"В ответе присутствуют комментарии администратора\", function () {\r",
+              "    pm.expect(body.moderationComments).to.be.an(\"array\");\r",
+              "    pm.expect(body.moderationComments.length).to.be.greaterThan(0);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Количество комментариев совпадает\", function () {\r",
+              "\r",
+              "    const expected =\r",
+              "        JSON.parse(pm.collectionVariables.get(\"moderationComments\"));\r",
+              "\r",
+              "    pm.expect(body.moderationComments.length)\r",
+              "        .to.eql(expected.length);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Тексты комментариев совпадают\", function () {\r",
+              "    const expected = JSON.parse(\r",
+              "        pm.collectionVariables.get(\"moderationComments\")\r",
+              "    );\r",
+              "\r",
+              "    const actualContents = body.moderationComments\r",
+              "        .map(c => c.content);\r",
+              "\r",
+              "    expected.forEach(comment => {\r",
+              "        pm.expect(actualContents).to.include(comment.content);\r",
+              "    });\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Пользователь видит комментарии администратора при получении списка событий",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        const moderationComments = [\r",
+              "            { content: \"test comment 1\" },\r",
+              "            { content: \"test comment 2\" }\r",
+              "        ];\r",
+              "\r",
+              "        await api.sendToAdjustment(event.id, moderationComments)\r",
+              "\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "        pm.collectionVariables.set(\r",
+              "            \"moderationComments\",\r",
+              "            JSON.stringify(moderationComments)\r",
+              "        );\r",
+              "\r",
+              "    } catch (err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "const event = body.find(e =>\r",
+              "    e.id == pm.collectionVariables.get(\"eventId\")\r",
+              ");\r",
+              "\r",
+              "pm.test(\"Созданное событие присутствует в списке\", function () {\r",
+              "    pm.expect(event).to.not.be.undefined;\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Событие находится в статусе REQUIRES_ADJUSTMENT\", function () {\r",
+              "    pm.expect(event.state).to.eql(\"REQUIRES_ADJUSTMENT\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Количество комментариев совпадает\", function () {\r",
+              "\r",
+              "    const expected = JSON.parse(\r",
+              "        pm.collectionVariables.get(\"moderationComments\")\r",
+              "    );\r",
+              "\r",
+              "    pm.expect(event.moderationComments.length)\r",
+              "        .to.eql(expected.length);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Все комментарии присутствуют\", function () {\r",
+              "\r",
+              "    const expected = JSON.parse(\r",
+              "        pm.collectionVariables.get(\"moderationComments\")\r",
+              "    );\r",
+              "\r",
+              "    const actualContents =\r",
+              "        event.moderationComments.map(c => c.content);\r",
+              "\r",
+              "    expected.forEach(comment => {\r",
+              "        pm.expect(actualContents).to.include(comment.content);\r",
+              "    });\r",
+              "\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}",
+            "events"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "При повторной отправке на модерацию событие получает статус PENDING и revisionNumber увеличивается на 1",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        await api.sendToAdjustment(event.id, [\r",
+              "            { content: \"test comment 1\" }\r",
+              "        ]);\r",
+              "\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "        pm.collectionVariables.set(\r",
+              "            \"revisionNumber\",\r",
+              "            event.revisionNumber\r",
+              "        );\r",
+              "\r",
+              "    } catch (err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => { }, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Статус события изменился на PENDING\", function () {\r",
+              "    pm.expect(body.state).to.eql(\"PENDING\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Номер ревизии увеличился\", function () {\r",
+              "\r",
+              "    const oldRevision =\r",
+              "        Number(pm.collectionVariables.get(\"revisionNumber\"));\r",
+              "\r",
+              "    pm.expect(body.revisionNumber)\r",
+              "        .to.eql(oldRevision + 1);\r",
+              "\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"stateAction\": \"SEND_TO_REVIEW\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "После повторной модерации отображаются только комментарии текущей ревизии",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        const revision1Comments = [\r",
+              "            { content: \"test comment 1\" },\r",
+              "            { content: \"test comment 2\" }\r",
+              "        ];\r",
+              "\r",
+              "        const revision2Comments = [\r",
+              "            { content: \"test comment 3\" }\r",
+              "        ];\r",
+              "\r",
+              "        await api.sendToAdjustment(\r",
+              "            event.id,\r",
+              "            revision1Comments\r",
+              "        );\r",
+              "\r",
+              "        await api.sendToReview(\r",
+              "            user.id,\r",
+              "            event.id\r",
+              "        );\r",
+              "\r",
+              "        await api.sendToAdjustment(\r",
+              "            event.id,\r",
+              "            revision2Comments\r",
+              "        );\r",
+              "\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "\r",
+              "        pm.collectionVariables.set(\r",
+              "            \"revision1Comments\",\r",
+              "            JSON.stringify(revision1Comments)\r",
+              "        );\r",
+              "\r",
+              "        pm.collectionVariables.set(\r",
+              "            \"revision2Comments\",\r",
+              "            JSON.stringify(revision2Comments)\r",
+              "        );\r",
+              "\r",
+              "    } catch(err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } catch(e) {\r",
+              "        console.error(e);\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "const actualComments =\r",
+              "    body.moderationComments.map(c => c.content);\r",
+              "\r",
+              "const revision1Comments =\r",
+              "    JSON.parse(pm.collectionVariables.get(\"revision1Comments\"));\r",
+              "\r",
+              "const revision2Comments =\r",
+              "    JSON.parse(pm.collectionVariables.get(\"revision2Comments\"));\r",
+              "\r",
+              "pm.test(\"Отображается только комментарий текущей ревизии\", function () {\r",
+              "\r",
+              "    pm.expect(actualComments.length)\r",
+              "        .to.eql(revision2Comments.length);\r",
+              "\r",
+              "    revision2Comments.forEach(comment => {\r",
+              "        pm.expect(actualComments)\r",
+              "            .to.include(comment.content);\r",
+              "    });\r",
+              "\r",
+              "    revision1Comments.forEach(comment => {\r",
+              "        pm.expect(actualComments)\r",
+              "            .to.not.include(comment.content);\r",
+              "    });\r",
+              "\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Попытка повторно отправить на модерацию событие не в статусе REQUIRES_ADJUSTMENT возвращает ошибку 40",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        await api.publishEvent(event.id);\r",
+              "\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "\r",
+              "    } catch(err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } catch(e) {\r",
+              "        console.error(e);\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 409\", function () {\r",
+              "    pm.response.to.have.status(409);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Статус ошибки CONFLICT\", function () {\r",
+              "    pm.expect(body.status).to.eql(\"CONFLICT\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Возвращено описание ошибки\", function () {\r",
+              "    pm.expect(body.message).to.not.be.empty;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"stateAction\": \"SEND_TO_ADJUSTMENT\",\r\n    \"moderationComments\": [\r\n        {\r\n            \"content\": \"test comment\"\r\n        }\r\n    ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Если событие не в статусе REQUIRES_ADJUSTMENT, то список комментариев модератора пустой",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        const comments = [\r",
+              "            { content: \"test comment 1\" },\r",
+              "            { content: \"test comment 2\" }\r",
+              "        ];\r",
+              "\r",
+              "        await api.sendToAdjustment(\r",
+              "            event.id,\r",
+              "            comments\r",
+              "        );\r",
+              "\r",
+              "        await api.sendToReview(\r",
+              "            user.id,\r",
+              "            event.id\r",
+              "        );\r",
+              "\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "\r",
+              "    } catch(err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } catch(e) {\r",
+              "        console.error(e);\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Статус события PENDING\", function () {\r",
+              "\r",
+              "    pm.expect(body.state)\r",
+              "        .to.eql(\"PENDING\");\r",
+              "\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Поле moderationComments присутствует\", function () {\r",
+              "\r",
+              "    pm.expect(body)\r",
+              "        .to.have.property(\"moderationComments\");\r",
+              "\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Комментарии модератора отсутствуют\", function () {\r",
+              "\r",
+              "    pm.expect(body.moderationComments)\r",
+              "        .to.be.an(\"array\");\r",
+              "\r",
+              "    pm.expect(body.moderationComments.length)\r",
+              "        .to.eql(0);\r",
+              "\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Если событие не в статусе REQUIRES_ADJUSTMENT, то список комментариев модератора пустой - для списка событий",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        const comments = [\r",
+              "            { content: \"test comment 1\" },\r",
+              "            { content: \"test comment 2\" }\r",
+              "        ];\r",
+              "\r",
+              "        await api.sendToAdjustment(\r",
+              "            event.id,\r",
+              "            comments\r",
+              "        );\r",
+              "\r",
+              "        await api.sendToReview(\r",
+              "            user.id,\r",
+              "            event.id\r",
+              "        );\r",
+              "\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "\r",
+              "    } catch(err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } catch(e) {\r",
+              "        console.error(e);\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const body = pm.response.json();\r",
+              "\r",
+              "const event = body.find(\r",
+              "    e => e.id === Number(pm.collectionVariables.get(\"eventId\"))\r",
+              ");\r",
+              "\r",
+              "pm.test(\"Созданное событие присутствует в ответе\", function () {\r",
+              "\r",
+              "    pm.expect(event)\r",
+              "        .to.not.be.undefined;\r",
+              "\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Статус события PENDING\", function () {\r",
+              "\r",
+              "    pm.expect(event.state)\r",
+              "        .to.eql(\"PENDING\");\r",
+              "\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Поле moderationComments присутствует\", function () {\r",
+              "\r",
+              "    pm.expect(event)\r",
+              "        .to.have.property(\"moderationComments\");\r",
+              "\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Комментарии модератора отсутствуют\", function () {\r",
+              "\r",
+              "    pm.expect(event.moderationComments)\r",
+              "        .to.be.an(\"array\");\r",
+              "\r",
+              "    pm.expect(event.moderationComments.length)\r",
+              "        .to.eql(0);\r",
+              "\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}",
+            "events"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Проверка каскадной валидации комментариев администратора",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "\r",
+              "    } catch (err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 400 и данные в формате json\", function () {\r",
+              "    pm.response.to.have.status(400);\r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ должен содержать информацию об ошибке\", function () {\r",
+              "    pm.expect(target).to.have.property(\"status\");\r",
+              "    pm.expect(target).to.have.property(\"reason\");\r",
+              "    pm.expect(target).to.have.property(\"message\");\r",
+              "    pm.expect(target).to.have.property(\"timestamp\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Статус ошибки должен быть BAD_REQUEST\", function () {\r",
+              "    pm.expect(target.status).to.eql(\"BAD_REQUEST\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Ошибка должна относиться к полю content комментария модератора\", function () {\r",
+              "    pm.expect(target.message).to.include(\"moderationComments\");\r",
+              "    pm.expect(target.message).to.include(\"content\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"stateAction\": \"SEND_TO_ADJUSTMENT\",\r\n    \"moderationComments\": [\r\n        {\r\n            \"content\": \"\"\r\n        }\r\n    ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          "pm.collectionVariables.set('baseUrl', \"http://localhost:8080\");\r",
+          "API = class {\r",
+          "    constructor(postman, verbose = false, baseUrl = \"http://localhost:8080\") {\r",
+          "        this.baseUrl = baseUrl;\r",
+          "        this.pm = postman;\r",
+          "        this._verbose = verbose;\r",
+          "    }\r",
+          "\r",
+          "    async addUser(user, verbose = null) {\r",
+          "        return this.post(\"/admin/users\", user, \"Ошибка при добавлении нового пользователя: \", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async addCategory(category, verbose = null) {\r",
+          "        return this.post(\"/admin/categories\", category, \"Ошибка при добавлении новой категории: \", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async addEvent(userId, event, verbose = null) {\r",
+          "        return this.post(\"/users/\" + userId + \"/events\", event, \"Ошибка при добавлении нового события: \", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async addCompilation(compilation, verbose = null) {\r",
+          "        return this.post(\"/admin/compilations\", compilation, \"Ошибка при добавлении новой подборки: \", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async sendToReview(userId, eventId, verbose = null) {\r",
+          "        return this.patch(\r",
+          "            \"/users/\" + userId + \"/events/\" + eventId,\r",
+          "            { stateAction: \"SEND_TO_REVIEW\" },\r",
+          "            \"Ошибка при повторной отправке события на модерацию\",\r",
+          "            verbose\r",
+          "        );\r",
+          "    }\r",
+          "\r",
+          "    async sendToAdjustment(eventId, moderationComments, verbose = null) {\r",
+          "        return this.patch(\r",
+          "            \"/admin/events/\" + eventId,\r",
+          "            {\r",
+          "                stateAction: \"SEND_TO_ADJUSTMENT\",\r",
+          "                moderationComments: moderationComments\r",
+          "            },\r",
+          "            \"Ошибка при отправке события на корректировку\",\r",
+          "            verbose\r",
+          "        );\r",
+          "    }\r",
+          "\r",
+          "    async publishParticipationRequest(eventId, userId, verbose = null) {\r",
+          "        return this.post('/users/' + userId + '/requests?eventId=' + eventId, null, \"Ошибка при добавлении нового запроса на участие в событии\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async publishEvent(eventId, verbose = null) {\r",
+          "        return this.patch('/admin/events/' + eventId, { stateAction: \"PUBLISH_EVENT\" }, \"Ошибка при публикации события\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async rejectEvent(eventId, verbose = null) {\r",
+          "        return this.patch('/admin/events/' + eventId, { stateAction: \"REJECT_EVENT\" }, \"Ошибка при отмене события\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async acceptParticipationRequest(eventId, userId, reqId, verbose = null) {\r",
+          "        return this.patch('/users/' + userId + '/events/' + eventId + '/requests', { requestIds: [reqId], status: \"CONFIRMED\" }, \"Ошибка при принятии заявки на участие в событии\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async findCategory(catId, verbose = null) {\r",
+          "        return this.get('/categories/' + catId, null, \"Ошибка при поиске категории по id\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async findCompilation(compId, verbose = null) {\r",
+          "        return this.get('/compilations/' + compId, null, \"Ошибка при поиске подборки по id\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async findEvent(eventId, verbose = null) {\r",
+          "        return this.get('/events/' + eventId, null, \"Ошибка при поиске события по id\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async findUser(userId, verbose = null) {\r",
+          "        return this.get('/admin/users?ids=' + userId, null, \"Ошибка при поиске пользователя по id\", verbose);\r",
+          "    }\r",
+          "\r",
+          "    async post(path, body, errorText = \"Ошибка при выполнении post-запроса: \", verbose = null) {\r",
+          "        return this.sendRequest(\"POST\", path, body, errorText, verbose);\r",
+          "    }\r",
+          "\r",
+          "    async patch(path, body = null, errorText = \"Ошибка при выполнении patch-запроса: \", verbose = null) {\r",
+          "        return this.sendRequest(\"PATCH\", path, body, errorText, verbose);\r",
+          "    }\r",
+          "\r",
+          "    async get(path, body = null, errorText = \"Ошибка при выполнении get-запроса: \", verbose = null) {\r",
+          "        return this.sendRequest(\"GET\", path, body, errorText, verbose);\r",
+          "    }\r",
+          "    async sendRequest(method, path, body = null, errorText = \"Ошибка при выполнении запроса: \", verbose = null) {\r",
+          "        return new Promise((resolve, reject) => {\r",
+          "            verbose = verbose == null ? this._verbose : verbose;\r",
+          "            const request = {\r",
+          "                url: this.baseUrl + path,\r",
+          "                method: method,\r",
+          "                body: body == null ? \"\" : JSON.stringify(body),\r",
+          "                header: { \"Content-Type\": \"application/json\" },\r",
+          "            };\r",
+          "            if (verbose) {\r",
+          "                console.log(\"Отправляю запрос: \", request);\r",
+          "            }\r",
+          "\r",
+          "            try {\r",
+          "                this.pm.sendRequest(request, (error, response) => {\r",
+          "                    if (error || (response.code >= 400 && response.code <= 599)) {\r",
+          "                        let err = error ? error : JSON.stringify(response.json());\r",
+          "                        console.error(\"При выполнении запроса к серверу возникла ошика.\\n\", err,\r",
+          "                            \"\\nДля отладки проблемы повторите такой же запрос к вашей программе \" +\r",
+          "                            \"на локальном компьютере. Данные запроса:\\n\", JSON.stringify(request));\r",
+          "\r",
+          "                        reject(new Error(errorText + err));\r",
+          "                    }\r",
+          "                    if (verbose) {\r",
+          "                        console.log(\"Результат обработки запроса: код состояния - \", response.code, \", тело: \", response.json());\r",
+          "                    }\r",
+          "                    if (response.stream.length === 0) {\r",
+          "                        reject(new Error('Отправлено пустое тело ответа'))\r",
+          "                    } else {\r",
+          "                        resolve(response.json());\r",
+          "                    }\r",
+          "                });\r",
+          "\r",
+          "            } catch (err) {\r",
+          "                if (verbose) {\r",
+          "                    console.error(errorText, err);\r",
+          "                }\r",
+          "                return Promise.reject(err);\r",
+          "            }\r",
+          "        });\r",
+          "    }\r",
+          "};\r",
+          "\r",
+          "RandomUtils = class {\r",
+          "    constructor() { }\r",
+          "\r",
+          "    getUser() {\r",
+          "        return {\r",
+          "            name: pm.variables.replaceIn('{{$randomFullName}}'),\r",
+          "            email: pm.variables.replaceIn('{{$randomEmail}}')\r",
+          "        };\r",
+          "    }\r",
+          "\r",
+          "    getCategory() {\r",
+          "        return {\r",
+          "            name: pm.variables.replaceIn('{{$randomWord}}') + Math.floor(Math.random() * 10000 * Math.random()).toString()\r",
+          "        };\r",
+          "    }\r",
+          "\r",
+          "    getEvent(categoryId) {\r",
+          "        return {\r",
+          "            annotation: pm.variables.replaceIn('{{$randomLoremParagraph}}'),\r",
+          "            category: categoryId,\r",
+          "            description: pm.variables.replaceIn('{{$randomLoremParagraphs}}'),\r",
+          "            eventDate: this.getFutureDateTime(),\r",
+          "            location: {\r",
+          "                lat: parseFloat(pm.variables.replaceIn('{{$randomLatitude}}')),\r",
+          "                lon: parseFloat(pm.variables.replaceIn('{{$randomLongitude}}')),\r",
+          "            },\r",
+          "            paid: pm.variables.replaceIn('{{$randomBoolean}}'),\r",
+          "            participantLimit: pm.variables.replaceIn('{{$randomInt}}'),\r",
+          "            requestModeration: pm.variables.replaceIn('{{$randomBoolean}}'),\r",
+          "            title: pm.variables.replaceIn('{{$randomLoremSentence}}'),\r",
+          "        }\r",
+          "    }\r",
+          "\r",
+          "    getCompilation(...eventIds) {\r",
+          "        return {\r",
+          "            title: pm.variables.replaceIn('{{$randomLoremSentence}}').slice(0, 50),\r",
+          "            pinned: pm.variables.replaceIn('{{$randomBoolean}}'),\r",
+          "            events: eventIds\r",
+          "        };\r",
+          "    }\r",
+          "\r",
+          "\r",
+          "    getFutureDateTime(hourShift = 5, minuteShift = 0, yearShift = 0) {\r",
+          "        let moment = require('moment');\r",
+          "\r",
+          "        let m = moment();\r",
+          "        m.add(hourShift, 'hour');\r",
+          "        m.add(minuteShift, 'minute');\r",
+          "        m.add(yearShift, 'year');\r",
+          "\r",
+          "        return m.format('YYYY-MM-DD HH:mm:ss');\r",
+          "    }\r",
+          "\r",
+          "    getWord(length = 1) {\r",
+          "        let result = '';\r",
+          "        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\r",
+          "        const charactersLength = characters.length;\r",
+          "        let counter = 0;\r",
+          "        while (counter < length) {\r",
+          "            result += characters.charAt(Math.floor(Math.random() * charactersLength));\r",
+          "            counter += 1;\r",
+          "        }\r",
+          "        return result;\r",
+          "    }\r",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "response",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "moderationComments",
+      "value": ""
+    },
+    {
+      "key": "revisionNumber",
+      "value": ""
+    },
+    {
+      "key": "revision1Comments",
+      "value": ""
+    },
+    {
+      "key": "revision2Comments",
+      "value": ""
+    }
+  ]
+}

@@ -3,7 +3,11 @@ package ru.practicum.ewm.events;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.events.dto.EventDto;
+import ru.practicum.ewm.events.dto.EventDtoPrivate;
 import ru.practicum.ewm.events.dto.EventDtoShort;
+import ru.practicum.ewm.moderation.ModerationCommentMapper;
+import ru.practicum.ewm.moderation.ModerationCommentRepository;
+import ru.practicum.ewm.moderation.dto.ModerationCommentDto;
 import ru.practicum.ewm.request.ConfirmedRequestsCount;
 import ru.practicum.ewm.request.RequestRepository;
 import ru.practicum.ewm.request.RequestStatus;
@@ -19,6 +23,7 @@ public class EventEnricher {
 
     private final StatsClient statsClient;
     private final RequestRepository requestRepository;
+    private final ModerationCommentRepository moderationCommentRepository;
 
     public Collection<EventDto> toEventDtos(Collection<Event> events) {
         Map<String, Integer> views = getViewsForEvents(events);
@@ -29,6 +34,22 @@ public class EventEnricher {
                                 event,
                                 findViewsForEvent(views, event),
                                 confirmedRequestsCounts.getOrDefault(event.getId(), 0)
+                        )
+                )
+                .toList();
+    }
+
+    public Collection<EventDtoPrivate> toPrivateEventDtos(Collection<Event> events) {
+        Map<String, Integer> views = getViewsForEvents(events);
+        Map<Long, Integer> confirmedRequestsCounts = getConfirmedRequestsCounts(events);
+        Map<Long, Collection<ModerationCommentDto>> commentsForEvents = getModerationCommentsForEvents(events);
+        return events.stream()
+                .map(event ->
+                        EventMapper.mapEventToEventDtoPrivate(
+                                event,
+                                findViewsForEvent(views, event),
+                                confirmedRequestsCounts.getOrDefault(event.getId(), 0),
+                                commentsForEvents.getOrDefault(event.getId(), List.of())
                         )
                 )
                 .toList();
@@ -50,6 +71,15 @@ public class EventEnricher {
 
     public EventDto toEventDto(Event event) {
         return EventMapper.mapEventToEventDto(event, getViewsForEvent(event), getConfirmedRequestsForEventCount(event));
+    }
+
+    public EventDtoPrivate toEventDtoPrivate(Event event) {
+        return EventMapper.mapEventToEventDtoPrivate(
+                event,
+                getViewsForEvent(event),
+                getConfirmedRequestsForEventCount(event),
+                getModerationCommentsForEvent(event)
+        );
     }
 
     private int findViewsForEvent(Map<String, Integer> views, Event event) {
@@ -80,6 +110,35 @@ public class EventEnricher {
         confirmedRequestCounts.forEach(confirmedRequestsCount ->
                 result.put(confirmedRequestsCount.getEventId(), confirmedRequestsCount.getCount())
         );
+        return result;
+    }
+
+    private Collection<ModerationCommentDto> getModerationCommentsForEvent(Event event) {
+        if (event.getState() != EventState.REQUIRES_ADJUSTMENT) {
+            return List.of();
+        }
+        return moderationCommentRepository.findByEventIdAndRevisionNumber(event.getId(), event.getRevisionNumber()).stream()
+                .map(ModerationCommentMapper::mapEntityToModerationCommentDto)
+                .toList();
+    }
+
+    private Map<Long, Collection<ModerationCommentDto>> getModerationCommentsForEvents(Collection<Event> events) {
+        Map<Long, Collection<ModerationCommentDto>> result = new HashMap<>();
+        Collection<Long> eventIds = events.stream()
+                .filter(event -> event.getState() == EventState.REQUIRES_ADJUSTMENT)
+                .map(Event::getId)
+                .toList();
+        moderationCommentRepository.getCommentsForEvents(eventIds)
+                .forEach((comment) -> {
+                    ModerationCommentDto commentDto = ModerationCommentMapper.mapEntityToModerationCommentDto(comment);
+                    Long eventId = commentDto.getEventId();
+                    Collection<ModerationCommentDto> dtos = result.get(eventId);
+                    if (dtos == null) {
+                        result.put(eventId, new ArrayList<>(List.of(commentDto)));
+                    } else {
+                        dtos.add(commentDto);
+                    }
+                });
         return result;
     }
 

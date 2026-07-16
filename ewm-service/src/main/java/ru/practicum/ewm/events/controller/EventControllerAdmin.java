@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.events.EventService;
 import ru.practicum.ewm.events.EventState;
 import ru.practicum.ewm.events.dto.EventDto;
-import ru.practicum.ewm.events.dto.EventDtoPatch;
+import ru.practicum.ewm.events.dto.EventDtoPatchAdmin;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -36,7 +36,7 @@ public class EventControllerAdmin {
     }
 
     @PatchMapping("/{eventId}")
-    public EventDto patchEvent(@PathVariable Long eventId, @RequestBody @Valid EventDtoPatch eventData) {
+    public EventDto patchEvent(@PathVariable Long eventId, @RequestBody @Valid EventDtoPatchAdmin eventData) {
         log.info("EventControllerAdmin: изменение данных события (eventId = {}, eventData = {})", eventId, eventData);
         return eventService.patchEventAdmin(eventId, eventData);
     }
