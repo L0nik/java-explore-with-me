@@ -129,7 +129,7 @@ public class EventMapper {
             } else if (byAdmin && stateAction.equals(StateAction.SEND_TO_ADJUSTMENT)) {
                 if (!event.getState().equals(EventState.PENDING)) {
                     throw new ConflictException(
-                            "Cannot sen event to adjustment the event because it's not in the right state: " +
+                            "Cannot send event to adjustment because it's not in the right state: " +
                                     event.getState()
                     );
                 }

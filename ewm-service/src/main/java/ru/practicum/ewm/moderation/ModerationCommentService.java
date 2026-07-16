@@ -18,6 +18,7 @@ public class ModerationCommentService {
 
     private final ModerationCommentRepository moderationCommentRepository;
 
+    @Transactional
     public void addComments(Event event, Collection<ModerationCommentDtoCreate> commentDtos) {
 
         log.info("ModerationCommentService: добавление комментариев администратора для события (event = {}, commentDtos = {})",

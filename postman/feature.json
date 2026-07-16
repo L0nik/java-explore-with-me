@@ -967,6 +967,108 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Проверка каскадной валидации комментариев администратора",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const main = async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const rnd = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "        const user = await api.addUser(rnd.getUser());\r",
+              "        const category = await api.addCategory(rnd.getCategory());\r",
+              "        const event = await api.addEvent(\r",
+              "            user.id,\r",
+              "            rnd.getEvent(category.id)\r",
+              "        );\r",
+              "\r",
+              "        pm.collectionVariables.set(\"eventId\", event.id);\r",
+              "        pm.collectionVariables.set(\"userId\", user.id);\r",
+              "\r",
+              "    } catch (err) {\r",
+              "        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => {}, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 400 и данные в формате json\", function () {\r",
+              "    pm.response.to.have.status(400);\r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ должен содержать информацию об ошибке\", function () {\r",
+              "    pm.expect(target).to.have.property(\"status\");\r",
+              "    pm.expect(target).to.have.property(\"reason\");\r",
+              "    pm.expect(target).to.have.property(\"message\");\r",
+              "    pm.expect(target).to.have.property(\"timestamp\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Статус ошибки должен быть BAD_REQUEST\", function () {\r",
+              "    pm.expect(target.status).to.eql(\"BAD_REQUEST\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Ошибка должна относиться к полю content комментария модератора\", function () {\r",
+              "    pm.expect(target.message).to.include(\"moderationComments\");\r",
+              "    pm.expect(target.message).to.include(\"content\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"stateAction\": \"SEND_TO_ADJUSTMENT\",\r\n    \"moderationComments\": [\r\n        {\r\n            \"content\": \"\"\r\n        }\r\n    ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/events/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "events",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
